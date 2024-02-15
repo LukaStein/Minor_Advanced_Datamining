@@ -29,8 +29,9 @@ class Perceptron():
         def partial_fit(self, xs, ys):
              yhat : list = self.predict(xs)
              index = 0
+             yhatNewPredictions = []
              for x,yOld in zip(xs,ys):
-                #   print(x, y, yhat[index])
+                  #   print(x, y, yhat[index])
                   # update-regel
                   self.bias = self.bias - (yhat[index] - yOld)
                   self.weights[0] = self.weights[0] - (yhat[index] - yOld) * x[0]
@@ -38,8 +39,24 @@ class Perceptron():
                   # opnieuw voorspellen
                   yNew = self.bias + (self.weights[0] * x[0]) + (self.weights[1] * x[1])
                   predictLabel = lambda x : -1.0 if x < 0  else (0.0 if x == 0 else 1.0)
-                  predictLabel(yNew)
+                  yhatNew = predictLabel(yNew)
+                  yhatNewPredictions.append(yhatNew)
                   index += 1
+             return yhatNewPredictions
             #  print(yhatNewPredictions)
                 # #print(sgn, biasUpdate, weight1, x1, weight2, x2)
-            
+        
+        def fit(self, xs, ys, *, epochs=0):
+            #  print(self.partial_fit(xs[:5], ys[:5]))
+             if epochs > 0: # choose number of epochs to iterate over
+                  for _ in range(epochs):
+                       self.partial_fit(xs, ys)
+             elif epochs < 0: # not allowed epochs input
+                  print("Epoch below 0 isn't allowed")
+             else: # default or zero epoch input value
+                  index = 0
+                  for index in range(len(ys)):
+                       yhatNewPredictions = self.partial_fit(xs, ys)
+                       if yhatNewPredictions[index] != ys[index]:
+                            self.partial_fit(xs, ys)
+                            index += 1
