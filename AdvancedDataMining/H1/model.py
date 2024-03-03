@@ -138,16 +138,19 @@ def mean_squared_error(yhat, y):
 def mean_absolute_error(yhat, y):
      return abs(yhat-y)
 
+def hinge(yhat, y):
+     return max(1-yhat*y,0)
 
-def derivative(function, delta=0.1):
+def derivative(function, delta=0.8):
      
      def wrapper_derivative(x, *args):
           # print("wrapper", args) # probleem is dat y niet geupdate wordt en dus op 0 blijft
           # print(function(x + delta*x, *args))
-          return  ( function(x + delta, *args) - function(x - delta, *args) )  / (2*delta)
-
           wrapper_derivative.__name__ = function.__name__ + "'"
           wrapper_derivative.__qualname__ = function.__qualname__ + "'"
+          return  ( function(x + delta, *args) - function(x - delta, *args) )  / (2*delta)
+
+         
      return wrapper_derivative
 
 
