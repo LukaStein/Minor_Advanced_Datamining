@@ -132,6 +132,7 @@ def sigmoid(yValue):
      return (1 / (1+e**-yValue))
 
 def mean_squared_error(yhat, y):
+     # print("mean", y)
      return (yhat-y)**2
 
 def mean_absolute_error(yhat, y):
@@ -139,9 +140,11 @@ def mean_absolute_error(yhat, y):
 
 
 def derivative(function, delta=0.1):
-  
+     
      def wrapper_derivative(x, *args):
-          return  ( function(x + delta*x, *args) - function(x - delta*x, *args) )  / (2*delta)
+          # print("wrapper", args) # probleem is dat y niet geupdate wordt en dus op 0 blijft
+          # print(function(x + delta*x, *args))
+          return  ( function(x + delta, *args) - function(x - delta, *args) )  / (2*delta)
 
           wrapper_derivative.__name__ = function.__name__ + "'"
           wrapper_derivative.__qualname__ = function.__qualname__ + "'"
@@ -152,7 +155,7 @@ class Neuron():
      def __init__(self, dim, activation=linear, loss=mean_squared_error):
           self.dim = dim
           self.bias = 0
-          self.weights = [0 for _ in range(self.dim)]
+          self.weights = [0,0]
           self.activation = activation
           self.loss = loss
 
@@ -174,9 +177,10 @@ class Neuron():
           yhat : list = self.predict(xs)
           index = 0 # aantal voorspelde labels moet gelijk zijn aan aantal echte labels
           predictions_updated_yhat = []
-          for xCoords, yOld in zip(xs, ys): # yOld is echte label
-               dl_dhat = derivative(self.loss) # mean_squared_error per default
-               dyhat_da = derivative(self.activation)
+          dl_dhat = derivative(self.loss) # mean_squared_error per default, geef functie aan derivative
+          dyhat_da = derivative(self.activation)
+          for xCoords, yOld in zip(xs,ys): # yOld is echte label
+               # print(dl_dhat(yhat[index], yOld))
                self.bias = self.bias - ( alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha) )
                self.weights[0] = self.weights[0] - ( alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha) * xCoords[0])
                self.weights[1] = self.weights[1] - ( alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha) * xCoords[1])
@@ -184,4 +188,14 @@ class Neuron():
                yNew = self.bias + (self.weights[0] * xCoords[0]) + (self.weights[1] * xCoords[1])
                yhatUpdate = self.activation(yNew)
                predictions_updated_yhat.append(yhatUpdate)
+               index += 1
           return predictions_updated_yhat
+ 
+     def fit(self, xs, ys, *, alpha=0.001, epochs=100):
+          #  print(self.partial_fit(xs[:5], ys[:5]))
+          # self.partial_fit(xs, ys, alpha=0.001)
+          if epochs > 0: # choose number of epochs to iterate over
+               for _ in range(epochs):
+                    self.partial_fit(xs, ys, alpha=alpha)
+          elif epochs <= 0: # not allowed epochs input
+               print("Epoch below 0 isn't allowed")
