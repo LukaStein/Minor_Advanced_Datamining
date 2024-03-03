@@ -130,3 +130,58 @@ def tanh(yValue):
 
 def sigmoid(yValue):
      return (1 / (1+e**-yValue))
+
+def mean_squared_error(yhat, y):
+     return (yhat-y)**2
+
+def mean_absolute_error(yhat, y):
+     return abs(yhat-y)
+
+
+def derivative(function, delta=0.1):
+  
+     def wrapper_derivative(x, *args):
+          return  ( function(x + delta*x, *args) - function(x - delta*x, *args) )  / (2*delta)
+
+          wrapper_derivative.__name__ = function.__name__ + "'"
+          wrapper_derivative.__qualname__ = function.__qualname__ + "'"
+     return wrapper_derivative
+
+
+class Neuron():
+     def __init__(self, dim, activation=linear, loss=mean_squared_error):
+          self.dim = dim
+          self.bias = 0
+          self.weights = [0 for _ in range(self.dim)]
+          self.activation = activation
+          self.loss = loss
+
+     def __repr__(self):
+          text = f'Neuron(dim={self.dim}, activation={self.activation.__name__}, loss={self.loss.__name__})'
+          return text
+
+     def predict(self, xs) -> list: 
+          predictions_yhat = []
+          for xCoords in xs:
+               x1 = xCoords[0]
+               x2 = xCoords[1]
+               yValue = self.bias + (self.weights[0] * x1) + (self.weights[1] * x2)
+               yhat = self.activation(yValue)
+               predictions_yhat.append(yhat)
+          return predictions_yhat
+
+     def partial_fit(self, xs, ys, *, alpha=0.01) -> list:
+          yhat : list = self.predict(xs)
+          index = 0 # aantal voorspelde labels moet gelijk zijn aan aantal echte labels
+          predictions_updated_yhat = []
+          for xCoords, yOld in zip(xs, ys): # yOld is echte label
+               dl_dhat = derivative(self.loss) # mean_squared_error per default
+               dyhat_da = derivative(self.activation)
+               self.bias = self.bias - ( alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha) )
+               self.weights[0] = self.weights[0] - ( alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha) * xCoords[0])
+               self.weights[1] = self.weights[1] - ( alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha) * xCoords[1])
+               # voorspellingen opnieuw doen
+               yNew = self.bias + (self.weights[0] * xCoords[0]) + (self.weights[1] * xCoords[1])
+               yhatUpdate = self.activation(yNew)
+               predictions_updated_yhat.append(yhatUpdate)
+          return predictions_updated_yhat
