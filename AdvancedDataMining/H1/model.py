@@ -114,3 +114,19 @@ class LinearRegression:
                     self.partial_fit(xs, ys, alpha=alpha)
           elif epochs <= 0: # not allowed epochs input
                print("Epoch below 0 isn't allowed")
+
+
+def linear(a):
+     return a
+
+def sign(yValue):
+     predictLabel = lambda x : -1.0 if x < 0  else (0.0 if x == 0 else 1.0)
+     return predictLabel(yValue)
+
+from math import e
+
+def tanh(yValue):
+     return (e**yValue - e**-yValue) / (e**yValue + e**-yValue)
+
+def sigmoid(yValue):
+     return (1 / (1+e**-yValue))
