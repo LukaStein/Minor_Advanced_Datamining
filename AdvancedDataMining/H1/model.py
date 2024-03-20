@@ -35,7 +35,6 @@ class Perceptron():
              index = 0
              yhatNewPredictions = []
              for x,yOld in zip(xs,ys):
-                  #   print(x, y, yhat[index])
                   # update-regel
                   self.bias = self.bias - (yhat[index] - yOld)
                   self.weights[0] = self.weights[0] - (yhat[index] - yOld) * x[0]
@@ -47,11 +46,8 @@ class Perceptron():
                   yhatNewPredictions.append(yhatNew)
                   index += 1
              return yhatNewPredictions
-            #  print(yhatNewPredictions)
-                # #print(sgn, biasUpdate, weight1, x1, weight2, x2)
         
         def fit(self, xs, ys, *, epochs=0):
-            #  print(self.partial_fit(xs[:5], ys[:5]))
              if epochs > 0: # choose number of epochs to iterate over
                   for _ in range(epochs):
                        self.partial_fit(xs, ys)
@@ -70,7 +66,7 @@ class LinearRegression:
      def __init__(self, dim):
           self.dim = dim
           self.bias = 0
-          self.weights = [0, 0]
+          self.weights = [0 for _ in range(dim)]
 
      def __repr__(self):
           text = f'Perceptron(dim={self.dim})'
@@ -84,10 +80,13 @@ class LinearRegression:
           """
           predictions_yhats = [] 
           for xCoords in xs:
-               x1 = xCoords[0]
-               x2 = xCoords[1]
+               # print(self.weights)
+               yValue = 0
+               for xi in range(len(xCoords)):
+                    # print(self.weights[xi])
+                    yValue = yValue + self.weights[xi] * xCoords[xi]
                # initiële voorspelling
-               yValue = self.bias + (self.weights[0] * x1) + (self.weights[1] * x2)
+               yValue = yValue + self.bias
                # bewaar voorspellingen 
                predictions_yhats.append(yValue)
           return predictions_yhats
@@ -97,13 +96,12 @@ class LinearRegression:
           index = 0
           yhatNewPredictions = []
           for x,yOld in zip(xs,ys):
-               #   print(x, y, yhat[index])
                # update-regel
                self.bias = self.bias - alpha*(yhat[index] - yOld)
-               self.weights[0] = self.weights[0] - alpha*(yhat[index] - yOld) * x[0]
-               self.weights[1] = self.weights[1] - alpha*(yhat[index] - yOld) * x[1]
+               for xi in range(len(x)):
+                    self.weights[xi] = self.weights[xi] - alpha*(yhat[index] - yOld) * x[xi]
                # opnieuw voorspellen
-               yNew = self.bias + (self.weights[0] * x[0]) + (self.weights[1] * x[1])
+               yNew = self.bias + sum(self.weights[xi] * x[xi] for xi in range(len(x)))
                yhatNewPredictions.append(yNew)
                index += 1
           return yhatNewPredictions
@@ -162,7 +160,7 @@ class Neuron():
      def __init__(self, dim, activation=linear, loss=mean_squared_error):
           self.dim = dim
           self.bias = 0
-          self.weights = [0,0]
+          self.weights = [0 for _ in range(dim)]
           self.activation = activation
           self.loss = loss
 
@@ -170,15 +168,23 @@ class Neuron():
           text = f'Neuron(dim={self.dim}, activation={self.activation.__name__}, loss={self.loss.__name__})'
           return text
 
-     def predict(self, xs) -> list: 
-          predictions_yhat = []
+     def predict(self, xs) -> list:
+          """
+          xs ontvangt attributen van een lijst instances
+          param: geneste lijst van lijsten
+          return: enkelvoudige lijst
+          """
+          predictions_yhats = [] 
           for xCoords in xs:
-               x1 = xCoords[0]
-               x2 = xCoords[1]
-               yValue = self.bias + (self.weights[0] * x1) + (self.weights[1] * x2)
-               yhat = self.activation(yValue)
-               predictions_yhat.append(yhat)
-          return predictions_yhat
+               yValue = 0
+               for xi in range(len(xCoords)):
+                    # print(self.weights[xi])
+                    yValue = yValue + self.weights[xi] * xCoords[xi]
+               # initiële voorspelling
+               yValue = yValue + self.bias
+               # bewaar voorspellingen 
+               predictions_yhats.append(yValue)
+          return predictions_yhats
 
 #Predictions: TypeAlias = list[float] / Typing module
      def partial_fit(self, xs, ys, *, alpha=0.01) -> list: # dit kan ooklist[list[float]]
@@ -188,12 +194,12 @@ class Neuron():
           dl_dhat = derivative(self.loss) # mean_squared_error per default, geef functie aan derivative
           dyhat_da = derivative(self.activation)
           for xCoords, yOld in zip(xs,ys): # yOld is echte label
-               # print(dl_dhat(yhat[index], yOld))
                self.bias = self.bias - ( alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha) )
-               self.weights[0] = self.weights[0] - ( alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha) * xCoords[0])
-               self.weights[1] = self.weights[1] - ( alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha) * xCoords[1])
+               for xi in range(len(xCoords)):
+                    self.weights[xi] = self.weights[xi] - (alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha) * xCoords[xi])
                # voorspellingen opnieuw doen
-               yNew = self.bias + (self.weights[0] * xCoords[0]) + (self.weights[1] * xCoords[1])
+               yNew = self.bias + sum(self.weights[xi] * xCoords[xi] for xi in range(len(xCoords)))
+
                yhatUpdate = self.activation(yNew)
                predictions_updated_yhat.append(yhatUpdate)
                index += 1
@@ -438,4 +444,3 @@ class LossLayer(Layer):
                               g.append(gradient)
                          gs.append(g)
           return yhats, ls, gs # naar activationlayer
-     
