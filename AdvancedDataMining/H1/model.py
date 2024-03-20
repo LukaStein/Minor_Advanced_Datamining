@@ -6,7 +6,7 @@ class Perceptron():
         def __init__(self, dim):
               self.dim = dim
               self.bias = 0
-              self.weights = [0, 0]
+              self.weights = [0 _ in range(dim)]
 
         def __repr__(self):
             text = f'Perceptron(dim={self.dim})'
@@ -20,10 +20,8 @@ class Perceptron():
             """
             predictions_yhat = [] 
             for xCoords in xs:
-                x1 = xCoords[0]
-                x2 = xCoords[1]
                 # initiële voorspelling
-                yValue = self.bias + (self.weights[0] * x1) + (self.weights[1] * x2)
+                yValue = self.bias + sum(self.weights[xi] * xCoords[xi] for xi in range(len(xCoords)))
                 predictLabel = lambda x : -1.0 if x < 0  else (0.0 if x == 0 else 1.0)
                 yhat = predictLabel(yValue)
                 # bewaar voorspellingen 
@@ -37,10 +35,10 @@ class Perceptron():
              for x,yOld in zip(xs,ys):
                   # update-regel
                   self.bias = self.bias - (yhat[index] - yOld)
-                  self.weights[0] = self.weights[0] - (yhat[index] - yOld) * x[0]
-                  self.weights[1] = self.weights[1] - (yhat[index] - yOld) * x[1]
+                  for xi in range(len(x)):
+                       self.weights[xi] = self.weights[xi] - (yhat[index] - yOld) * x[xi]
                   # opnieuw voorspellen
-                  yNew = self.bias + (self.weights[0] * x[0]) + (self.weights[1] * x[1])
+                  yNew = self.bias + sum(self.weights[xi] * x[xi] for xi in range(len(x)))
                   predictLabel = lambda x : -1.0 if x < 0  else (0.0 if x == 0 else 1.0)
                   yhatNew = predictLabel(yNew)
                   yhatNewPredictions.append(yhatNew)
