@@ -6,7 +6,7 @@ class Perceptron():
         def __init__(self, dim):
               self.dim = dim
               self.bias = 0
-              self.weights = [0 _ in range(dim)]
+              self.weights = [0 for _ in range(dim)]
 
         def __repr__(self):
             text = f'Perceptron(dim={self.dim})'
@@ -116,20 +116,23 @@ class LinearRegression:
                print("Epoch below 0 isn't allowed")
 
 
-def linear(a):
+def linear(a): # activatiefunctie
      return a
 
-def sign(yValue):
+def sign(yValue): # activatiefunctie
      predictLabel = lambda x : -1.0 if x < 0  else (0.0 if x == 0 else 1.0)
      return predictLabel(yValue)
 
 from math import e
 
-def tanh(yValue):
+def tanh(yValue): # activatiefunctie
      return (e**yValue - e**-yValue) / (e**yValue + e**-yValue)
 
-def sigmoid(yValue):
+def sigmoid(yValue): # activatiefunctie
      return (1 / (1+e**-yValue))
+
+def softsign(yValue): # activatiefunctie
+     return yValue / (1 + abs(yValue))
 
 def mean_squared_error(yhat, y): # loss
      # print("mean", y)
@@ -140,6 +143,7 @@ def mean_absolute_error(yhat, y): # loss
 
 def hinge(yhat, y): # loss
      return max(1-yhat*y,0)
+
 
 def derivative(function, delta=0.8):
      
