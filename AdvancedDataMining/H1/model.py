@@ -374,7 +374,7 @@ class DenseLayer(Layer):
                               self.weights[o][i] -= update * xs[n][i]
           return yhats, ls, qs # naar inputlayer, maar wordt daar niet gebruikt
      
-class ActivationLayer(Layer):
+class ActivationLayer(Layer): # algemene uitvoerlaag
      def __init__(self, outputs, activation=linear, name=None, next=None):
           self.activation = activation
           self.name = name
@@ -413,6 +413,43 @@ class ActivationLayer(Layer):
                     qs.append(q)
           return yhats, ls, qs # naar denselayer
 
+class SoftmaxLayer(Layer): # uitvoerlaag neurale netwerken
+     def __init__(self, outputs, name=None, next=None):
+          super().__init__(outputs, name=name, next=next)
+
+     def __repr__(self):
+          text = f'ActivationLayer(outputs={self.outputs}, name={repr(self.name)})'
+          if self.next is not None:
+               text += ' + ' + repr(self.next)
+          return text
+     
+     def __call__(self, xs, ys=None, alpha=None):
+          yhat_noses = [] # hh : list with for each instance a list of yhat predictions of each output
+          for n in range(len(xs)): 
+               yhat_nose = [] # not final prediction list
+               max_val = max(xs[n])
+               for o in range(self.outputs): # i == o in aantal inputs == outputs
+                    xs[n][o] = xs[n][o] - max_val
+
+                    yhat_no = e**xs[n][o]
+                    yhat_nose.append(yhat_no) # fill list with noemers
+               yhat_sum = sum(yhat_nose) # calculate sum of all outputs for given instance
+               yhat_nose = [i/yhat_sum for i in yhat_nose] # where i = e^x_no
+               yhat_noses.append(yhat_nose)
+     
+          yhats, ls, gs = self.next(yhat_noses, ys=ys, alpha=alpha) # van de denselayer = naar de losslayer
+          
+          qs = None # gradient descent
+          if alpha is not None:
+               qs = []
+               for n in range(len(xs)): # itereer over instances
+                    q = []
+                    for i in range(self.inputs): # itereer over neuronen, inputs van outputs vorige laag
+                         gradient = sum(gs[n][o] * yhats[n][o] * ((o == i) - yhats[n][i]) for o in range(self.outputs))
+                         q.append(gradient)
+                    qs.append(q)
+          return yhats, ls, qs # naar denselayer
+     
 class LossLayer(Layer):
      def __init__(self, loss=mean_squared_error, name=None):
           self.loss = loss
