@@ -123,16 +123,33 @@ def sign(yValue): # activatiefunctie
      predictLabel = lambda x : -1.0 if x < 0  else (0.0 if x == 0 else 1.0)
      return predictLabel(yValue)
 
-from math import e
+from math import e, log # naturals value and log
 
 def tanh(yValue): # activatiefunctie
+     if yValue > 700 or yValue < -700:
+          return yValue
      return (e**yValue - e**-yValue) / (e**yValue + e**-yValue)
 
 def sigmoid(yValue): # activatiefunctie
+     if yValue < -700:
+          return e**yValue
      return (1 / (1+e**-yValue))
 
 def softsign(yValue): # activatiefunctie
      return yValue / (1 + abs(yValue))
+
+def softplus(yValue): # activatiefunctie   >      kan geen negatieve y-waarden berekenen, y.min= 0
+     if yValue > 700:
+          return yValue
+     return log(1+e**yValue)
+
+def relu(yValue): # activatiefunctie    > kan geen negatieve y-waarden berekenen, y.min= 0
+     return max(0, yValue)
+
+def swish(yValue, B=1): # activatiefunctie
+     if yValue < -300:
+          return yValue
+     return yValue / (1 + e**-(B*yValue))
 
 def mean_squared_error(yhat, y): # loss
      # print("mean", y)
@@ -144,7 +161,20 @@ def mean_absolute_error(yhat, y): # loss
 def hinge(yhat, y): # loss
      return max(1-yhat*y,0)
 
-
+def categorical_crossentropy(yhat_no, y_no): # loss
+     e = 0.001
+     if yhat_no >= e:
+          return -y_no * log(yhat_no)
+     else:
+          return -y_no * (log(e) + (yhat_no - e) / e)
+     
+def binary_crossentropy(yhat_no, y_no, e=0.001): # loss
+     if yhat_no >= e:
+          return -y_no * log(yhat_no) - (1 - y_no) * log(yhat_no)
+     else:
+          return -y_no * (log(e) + ((yhat_no - e) / e)) - (1 - y_no) * (log(e) + ((yhat_no - e) / e))
+     
+     
 def derivative(function, delta=0.8):
      
      def wrapper_derivative(x, *args):
