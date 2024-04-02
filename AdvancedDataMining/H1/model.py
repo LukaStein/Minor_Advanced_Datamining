@@ -161,12 +161,12 @@ def mean_absolute_error(yhat, y): # loss
 def hinge(yhat, y): # loss
      return max(1-yhat*y,0)
 
-def categorical_crossentropy(yhat_no, y_no, e=0.01): # loss
+def categorical_crossentropy(yhat_no, y_no, e=0.01): # loss , e not too small to prevent too small yhat values
      if yhat_no >= e: # if not to close to zero
           return -y_no * log(yhat_no)
      return -y_no * (log(e) + (yhat_no - e) / e)  # else take log of e instead of yhat_no
      
-def binary_crossentropy(yhat_no, y_no, e=0.01): # loss
+def binary_crossentropy(yhat_no, y_no, e=0.01): # loss, e not too small to prevent too small yhat values
      if yhat_no >= e: # if not to close to zero
           return -y_no * log(yhat_no) - (1 - y_no) * log(yhat_no)
      return -y_no * (log(e) + ((yhat_no - e) / e)) - (1 - y_no) * (log(e) + (yhat_no - e) / e) # else take log of e instead of yhat_no
@@ -336,12 +336,16 @@ class InputLayer(Layer): # dus hier geef je de begin data door
           l_mean = sum(ls) / len(ls)
           return l_mean
      
-     def fit(self, xs, ys, *, alpha=0.001, epochs=100):
+     def fit(self, xs, ys, *, validation_data=(None, None), alpha=0.001, epochs=100):
           if epochs > 0: # choose number of epochs to iterate over
                history = {'loss': []}
+               history.update({'val_loss': []} if all(validation_data) else history)# if validation_data values are not empty
                for epoch in range(epochs):
                     l_mean = self.partial_fit(xs, ys=ys, alpha=alpha)
                     history['loss'].append(l_mean)
+                    if len(history) == 2: # two keys are present
+                         vl_mean = self.partial_fit(*validation_data) # no alpha, means no learning, only validation
+                         history['val_loss'].append(vl_mean)
                return history
           elif epochs <= 0: # not allowed epochs input
                print("Epoch below 0 isn't allowed")
