@@ -161,19 +161,15 @@ def mean_absolute_error(yhat, y): # loss
 def hinge(yhat, y): # loss
      return max(1-yhat*y,0)
 
-def categorical_crossentropy(yhat_no, y_no): # loss
-     e = 0.001
-     if yhat_no >= e:
+def categorical_crossentropy(yhat_no, y_no, e=0.01): # loss
+     if yhat_no >= e: # if not to close to zero
           return -y_no * log(yhat_no)
-     else:
-          return -y_no * (log(e) + (yhat_no - e) / e)
+     return -y_no * (log(e) + (yhat_no - e) / e)  # else take log of e instead of yhat_no
      
-def binary_crossentropy(yhat_no, y_no, e=0.001): # loss
-     if yhat_no >= e:
+def binary_crossentropy(yhat_no, y_no, e=0.01): # loss
+     if yhat_no >= e: # if not to close to zero
           return -y_no * log(yhat_no) - (1 - y_no) * log(yhat_no)
-     else:
-          return -y_no * (log(e) + ((yhat_no - e) / e)) - (1 - y_no) * (log(e) + ((yhat_no - e) / e))
-     
+     return -y_no * (log(e) + ((yhat_no - e) / e)) - (1 - y_no) * (log(e) + (yhat_no - e) / e) # else take log of e instead of yhat_no
      
 def derivative(function, delta=0.8):
      
@@ -299,7 +295,7 @@ class Layer():
         return iter(self)
      
      def __call__(self, xs, loss=None, ys=None):
-        print(xs, loss, ys)
+     #    print(xs, loss, ys)
         raise NotImplementedError('Abstract __call__ method')
 
      def add(self, next):
@@ -336,12 +332,17 @@ class InputLayer(Layer): # dus hier geef je de begin data door
           return l_mean
 
      def partial_fit(self, xs, ys, alpha=0.001):
-          self(xs, ys=ys, alpha=alpha)
-
+          yhats, ls, gs = self(xs, ys=ys, alpha=alpha) # de call van DenseLayer
+          l_mean = sum(ls) / len(ls)
+          return l_mean
+     
      def fit(self, xs, ys, *, alpha=0.001, epochs=100):
           if epochs > 0: # choose number of epochs to iterate over
-               for _ in range(epochs):
-                    self.partial_fit(xs, ys=ys, alpha=alpha)
+               history = {'loss': []}
+               for epoch in range(epochs):
+                    l_mean = self.partial_fit(xs, ys=ys, alpha=alpha)
+                    history['loss'].append(l_mean)
+               return history
           elif epochs <= 0: # not allowed epochs input
                print("Epoch below 0 isn't allowed")
 
