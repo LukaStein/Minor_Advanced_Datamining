@@ -167,14 +167,10 @@ def categorical_crossentropy(yhat_no, y_no, e=0.01): # loss
      return -y_no * (log(e) + (yhat_no - e) / e)  # else take log of e instead of yhat_no
      
 def binary_crossentropy(yhat_no, y_no, e=0.01): # loss
-     logE = (log(e) + (yhat_no - e / e))
-     logYhat, logYhat2 = logE, logE
      if yhat_no >= e: # if not to close to zero
-          logYhat = log(yhat_no)
-     if 1 - yhat_no >= e:
-          logYhat2 = log(1 - yhat_no)
-     return -y_no * logYhat - (1 - y_no) * logYhat2 # else take log of e instead of yhat_no
-     # (log(e) + (yhat_no - e / e))
+          return -y_no * log(yhat_no) - (1 - y_no) * log(yhat_no)
+     return -y_no * (log(e) + ((yhat_no - e) / e)) - (1 - y_no) * (log(e) + (yhat_no - e) / e) # else take log of e instead of yhat_no
+     
      
 def derivative(function, delta=0.8):
      
