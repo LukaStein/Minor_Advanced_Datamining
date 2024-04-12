@@ -151,6 +151,11 @@ def swish(yValue, B=1): # activatiefunctie
           return yValue
      return yValue / (1 + e**-(B*yValue))
 
+def nipuna(yValue, B=1, e=0.001): # activatiefunctie
+     #𝑓(𝑥)=max(𝑔(𝑥),𝑥)𝑤ℎ𝑒𝑟𝑒 𝑔(𝑥)=𝑥(1+𝑒−𝛽𝑥)
+     fg = lambda x,e,B: x * (1 + e - B * x)
+     return max(fg(yValue,B,e), yValue)
+
 def mean_squared_error(yhat, y): # loss
      # print("mean", y)
      return (yhat-y)**2
