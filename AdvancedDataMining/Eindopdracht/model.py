@@ -130,10 +130,10 @@ def tanh(yValue): # activatiefunctie
           return yValue
      return (e**yValue - e**-yValue) / (e**yValue + e**-yValue)
 
-def sigmoid(yValue): # activatiefunctie
+def sigmoid(yValue, B=1): # activatiefunctie
      if yValue < -700:
           return e**yValue
-     return (1 / (1+e**-yValue))
+     return (1 / (1+e**-(B*yValue)))
 
 def softsign(yValue): # activatiefunctie
      return yValue / (1 + abs(yValue))
@@ -147,14 +147,10 @@ def relu(yValue): # activatiefunctie    > kan geen negatieve y-waarden berekenen
      return max(0, yValue)
 
 def swish(yValue, B=1): # activatiefunctie
-     if yValue < -300:
-          return yValue
-     return yValue / (1 + e**-(B*yValue))
+     return yValue * sigmoid(yValue, B)
 
-def nipuna(yValue, B=1, e=0.01): # activatiefunctie
-     #𝑓(𝑥)=max(𝑔(𝑥),𝑥)𝑤ℎ𝑒𝑟𝑒 𝑔(𝑥)=𝑥(1+𝑒−𝛽𝑥)
-     fg = lambda x,e,B: x * (1 + e - B * x)
-     return max(fg(yValue,B,e), yValue)
+def nipuna(yValue, B=1): # activatiefunctie
+     return max(swish(yValue, B), yValue)
 
 def mean_squared_error(yhat, y): # loss
      # print("mean", y)
