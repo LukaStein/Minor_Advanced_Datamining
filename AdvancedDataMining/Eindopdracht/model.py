@@ -168,7 +168,7 @@ class LinearRegression:
             print("Epoch below 0 isn't allowed")
 
 
-def linear(a) -> (float, int):  # activation function
+def linear(a) -> float|int:  # activation function
     """
     Identify function returns the predicted y-value that it receives
     :param a; predicted y-value
@@ -232,7 +232,7 @@ def softplus(y_value) -> float:  # activation function
     return log(1 + e ** y_value)
 
 
-def relu(y_value) -> (int, float):  # activation function
+def relu(y_value) -> int|float:  # activation function
     """
     Relu function provides linearity with a slope of 0 or 1, but can't calculate negative y-values i.e. y.min = 0.
     :param y_value: predicted y-value
@@ -241,7 +241,7 @@ def relu(y_value) -> (int, float):  # activation function
     return max(0, y_value)
 
 
-def swish(y_value, beta=1):  # activation function
+def swish(y_value, beta=1) -> float:  # activation function
     """
     Swish function receives a trainable parameter beta and is the sigmoid function times the y_value.
      Per default, beta is 1.
@@ -253,8 +253,11 @@ def swish(y_value, beta=1):  # activation function
     return y_value * sigmoid(y_value, beta)
 
 
-def nipuna(y_value, B=1):  # activation function
-    return max(swish(y_value, B), y_value)
+def nipuna(y_value, beta=3) -> int|float:  # activation function
+    """
+    The nipuna function is a newer function that compares the output of the swish function with the y_value.  
+    """
+    return max(swish(y_value, beta), y_value)
 
 
 def mean_squared_error(yhat, y):  # loss
