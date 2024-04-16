@@ -35,9 +35,9 @@ class Perceptron:
         predictions_yhat = []
         for xCoords in xs:
             # Initial prediction
-            yValue = self.bias + sum(self.weights[xi] * xCoords[xi] for xi in range(len(xCoords)))
-            predictLabel = lambda x: -1.0 if x < 0 else (0.0 if x == 0 else 1.0)
-            yhat = predictLabel(yValue)
+            y_value = self.bias + sum(self.weights[xi] * xCoords[xi] for xi in range(len(xCoords)))
+            predict_label = lambda x: -1.0 if x < 0 else (0.0 if x == 0 else 1.0)
+            yhat = predict_label(y_value)
             # Save predictions
             predictions_yhat.append(yhat)
         return predictions_yhat
@@ -52,17 +52,17 @@ class Perceptron:
         """
         yhat: list = self.predict(xs)
         index = 0
-        yhatNewPredictions = []
+        yhat_new_predictions = []
         for x, yOld in zip(xs, ys):
             # update-regel
             self.bias = self.bias - (yhat[index] - yOld)
             for xi in range(len(x)):
                 self.weights[xi] = self.weights[xi] - (yhat[index] - yOld) * x[xi]
             # opnieuw voorspellen
-            yNew = self.bias + sum(self.weights[xi] * x[xi] for xi in range(len(x)))
-            predictLabel = lambda x: -1.0 if x < 0 else (0.0 if x == 0 else 1.0)
-            yhatNew = predictLabel(yNew)
-            yhatNewPredictions.append(yhatNew)
+            y_new = self.bias + sum(self.weights[xi] * x[xi] for xi in range(len(x)))
+            predict_label = lambda x: -1.0 if x < 0 else (0.0 if x == 0 else 1.0)
+            yhat_new = predict_label(y_new)
+            yhat_new_predictions.append(yhatNew)
             index += 1
         return yhatNewPredictions
 
@@ -83,8 +83,8 @@ class Perceptron:
         else:  # default or zero epoch input value
             index = 0
             for index in range(len(ys)):
-                yhatNewPredictions = self.partial_fit(xs, ys)
-                if yhatNewPredictions[index] != ys[index]:
+                yhat_new_predictions = self.partial_fit(xs, ys)
+                if yhat_new_predictions[index] != ys[index]:
                     self.partial_fit(xs, ys)
                     index += 1
 
@@ -93,7 +93,6 @@ class LinearRegression:
     """
     Model for linear regression between classes
     """
-
     def __init__(self, dim):
         """Construct a linear regression model (LRM)
         :param dim: dimensions of an instance"""
@@ -118,14 +117,14 @@ class LinearRegression:
         predictions_yhats = []
         for xCoords in xs:
             # print(self.weights)
-            yValue = 0
+            y_value = 0
             for xi in range(len(xCoords)):
                 # print(self.weights[xi])
-                yValue = yValue + self.weights[xi] * xCoords[xi]
+                y_value = y_value + self.weights[xi] * xCoords[xi]
             # initiële voorspelling
-            yValue = yValue + self.bias
+            y_value = y_value + self.bias
             # bewaar voorspellingen
-            predictions_yhats.append(yValue)
+            predictions_yhats.append(y_value)
         return predictions_yhats
 
     def partial_fit(self, xs, ys, *, alpha=0.01) -> list:
@@ -134,22 +133,22 @@ class LinearRegression:
         :param self:
         :param xs; nested list of lists. XS receives attributes of a list instances
         :param ys; nested list of lists. YS contains the true labels.
-        :param alpha; learning rate
-        :return: yhatNewPredictions; partially fitted predictions
+        :param alpha; learning rate, defaulted to 0.01
+        :return: yhat_new_predictions; partially fitted predictions
         """
         yhat: list = self.predict(xs)
         index = 0
-        yhatNewPredictions = []
+        yhat_new_predictions = []
         for x, yOld in zip(xs, ys):
             # update-regel
             self.bias = self.bias - alpha * (yhat[index] - yOld)
             for xi in range(len(x)):
                 self.weights[xi] = self.weights[xi] - alpha * (yhat[index] - yOld) * x[xi]
             # opnieuw voorspellen
-            yNew = self.bias + sum(self.weights[xi] * x[xi] for xi in range(len(x)))
-            yhatNewPredictions.append(yNew)
+            y_new = self.bias + sum(self.weights[xi] * x[xi] for xi in range(len(x)))
+            yhat_new_predictions.append(y_new)
             index += 1
-        return yhatNewPredictions
+        return yhat_new_predictions
 
     def fit(self, xs, ys, *, alpha=0.001, epochs=100):
         """
@@ -158,8 +157,8 @@ class LinearRegression:
         :param self:
         :param xs; nested list of lists. XS receives attributes of a list instances
         :param ys; nested list of lists. YS contains the true labels.
-        :param alpha; learning rate
-        :param epochs; number of epochs to partially fit on
+        :param alpha; learning rate, defaulted to 0.001
+        :param epochs; number of epochs to partially fit on, defaulted to 100
         """
         if epochs > 0:  # choose number of epochs to iterate over
             for _ in range(epochs):
@@ -350,6 +349,13 @@ class Neuron:
     Can predict and perform regression
     """
     def __init__(self, dim, activation=linear, loss=mean_squared_error):
+        """
+        Construct a neuron. With dimensions for an instance, activation and loss function are implemented, and
+        passed here.
+        :param dim: dimensions of an instance
+        :param activation: activation function, per default linear
+        :param loss: loss_function, per default linear
+        """
         self.dim = dim
         self.bias = 0
         self.weights = [0 for _ in range(dim)]
@@ -357,29 +363,40 @@ class Neuron:
         self.loss = loss
 
     def __repr__(self):
+        """
+        Return a string representation of the neuron
+        """
         text = f'Neuron(dim={self.dim}, activation={self.activation.__name__}, loss={self.loss.__name__})'
         return text
 
     def predict(self, xs) -> list:
         """
-        xs ontvangt attributen van een lijst instances
-        param: geneste lijst van lijsten
-        return: enkelvoudige lijst
+        Predict classifier in a single class problem
+        :param self:
+        :param xs; nested list of lists. XS receives attributes of a list instances
+        :return: predictions_yhat; single list of yhat predictions
         """
         predictions_yhats = []
         for xCoords in xs:
-            yValue = 0
+            y_value = 0
             for xi in range(len(xCoords)):
-                # print(self.weights[xi])
-                yValue = yValue + self.weights[xi] * xCoords[xi]
-            # initiële voorspelling
-            yValue = yValue + self.bias
-            # bewaar voorspellingen
+                y_value = y_value + self.weights[xi] * xCoords[xi]
+            # Initial prediction
+            y_value = y_value + self.bias
+            # Save predictions
             predictions_yhats.append(yValue)
         return predictions_yhats
 
-    # Predictions: TypeAlias = list[float] / Typing module
-    def partial_fit(self, xs, ys, *, alpha=0.01) -> list:  # dit kan ooklist[list[float]]
+    def partial_fit(self, xs, ys, *, alpha=0.01) -> list:
+        """
+        Adjust weights and biases to correct/update the predictions. Activation and loss functions
+        are derived to introduce gradient descent (flattening out the deviations in accuracy and loss curve)
+        :param self:
+        :param xs; nested list of lists. XS receives attributes of a list instances
+        :param ys; nested list of lists. YS contains the true labels.
+        :param alpha; learning rate, defaulted to 0.01
+        :return: predictions_updated_yhat; partially fitted predictions
+        """
         yhat: list = self.predict(xs)
         index = 0  # aantal voorspelde labels moet gelijk zijn aan aantal echte labels
         predictions_updated_yhat = []
@@ -391,16 +408,22 @@ class Neuron:
                 self.weights[xi] = self.weights[xi] - (
                         alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha) * xCoords[xi])
             # voorspellingen opnieuw doen
-            yNew = self.bias + sum(self.weights[xi] * xCoords[xi] for xi in range(len(xCoords)))
+            y_new = self.bias + sum(self.weights[xi] * xCoords[xi] for xi in range(len(xCoords)))
 
-            yhatUpdate = self.activation(yNew)
-            predictions_updated_yhat.append(yhatUpdate)
+            yhat_update = self.activation(y_new)
+            predictions_updated_yhat.append(yhat_update)
             index += 1
         return predictions_updated_yhat
 
     def fit(self, xs, ys, *, alpha=0.001, epochs=100):
-        #  print(self.partial_fit(xs[:5], ys[:5]))
-        # self.partial_fit(xs, ys, alpha=0.001)
+        """
+        Keep invoking the partially fit function over n epochs
+        :param self:
+        :param xs; nested list of lists. XS receives attributes of a list instances
+        :param ys; nested list of lists. YS contains the true labels.
+        :param alpha; learning rate, defaulted to 0.001
+        :param epochs; number of epochs to partially fit on, defaulted to 100
+        """
         if epochs > 0:  # choose number of epochs to iterate over
             for _ in range(epochs):
                 self.partial_fit(xs, ys, alpha=alpha)
@@ -409,9 +432,20 @@ class Neuron:
 
 
 class Layer:
-    layercounter = Counter()
+    """
+    Parent layer holding all functionality to connect layers and send input to the next layer.
+    The layer class is part of networks known as the multi-layered perceptron or neural network, that are
+    capable of deep learning.
+    """
+    layercounter = Counter()  # Count the layers like the name implies
 
     def __init__(self, outputs, *, name=None, next=None):
+        """
+        Construct the initial/parent layer
+        :param outputs: Output of current layer that will be sent as input to next layer. Initially instances of xs.
+        :param name: The name of the initialised layer
+        :param next: Points to the next layer
+        """
         Layer.layercounter[type(self)] += 1
         if name is None:
             name = f'{type(self).__name__}_{Layer.layercounter[type(self)]}'
@@ -421,12 +455,20 @@ class Layer:
         self.next = next
 
     def __repr__(self):
+        """
+        Return a string representation of a layer
+        """
         text = f'Layer(inputs={self.inputs}, outputs={self.outputs}, name={repr(self.name)})'
         if self.next is not None:
             text += ' + ' + repr(self.next)
         return text
 
     def __add__(self, next):
+        """
+        Adds a new layer by first copying the received next layer and then adding it.
+        :param next: Points to c
+        :return:
+        """
         result = deepcopy(self)
         result.add(deepcopy(next))
         return result
