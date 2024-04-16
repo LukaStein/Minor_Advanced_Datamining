@@ -1,8 +1,8 @@
 # IMPORTS
 from collections import Counter
 from copy import deepcopy
-from random import uniform
 from math import e, log  # natural value and log
+from random import uniform, seed, shuffle, Random
 
 
 class Perceptron:
@@ -322,7 +322,7 @@ def binary_crossentropy(yhat_no, y_no, epsilon=0.01):  # loss
     return -y_no * log_yhat - (1 - y_no) * log_yhat2  # binary cross-entropy formula
 
 
-def derivative(function, delta=0.05) -> "wrapper_derivative":
+def derivative(function, delta=0.03) -> "wrapper_derivative":
     """
     Returns derivative of either an activation function or loss function
     :param function: Any activation or loss function
@@ -362,7 +362,7 @@ class Neuron:
         self.activation = activation
         self.loss = loss
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Return a string representation of the neuron
         """
@@ -422,7 +422,7 @@ class Neuron:
         :param xs; nested list of lists. XS receives attributes of a list instances
         :param ys; nested list of lists. YS contains the true labels.
         :param alpha; learning rate, defaulted to 0.001
-        :param epochs; number of epochs to partially fit on, defaulted to 100
+        :param epochs; number of epochs (full runs) to partially fit on, defaulted to 100
         """
         if epochs > 0:  # choose number of epochs to iterate over
             for _ in range(epochs):
@@ -442,7 +442,7 @@ class Layer:
     def __init__(self, outputs, *, name=None, next=None):
         """
         Construct the initial/parent layer
-        :param outputs: Output of current layer that will be sent as input to next layer. Initially instances of xs.
+        :param outputs: Output of current layer that will be sent as input to next layer. I.e. initial instances of xs.
         :param name: The name of the initialised layer
         :param next: Points to the next layer
         """
@@ -454,7 +454,7 @@ class Layer:
         self.name = name
         self.next = next
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Return a string representation of a layer
         """
@@ -467,13 +467,18 @@ class Layer:
         """
         Adds a new layer by first copying the received next layer and then adding it.
         :param next: Points to c
-        :return:
+        :return: result; contains all added layers
         """
         result = deepcopy(self)
         result.add(deepcopy(next))
         return result
 
     def __getitem__(self, index):
+        """
+        Keeps layers (counts and names) in check
+        :param index: layer index
+        :return: self; class instance
+        """
         if index == 0 or index == self.name:
             return self
         if isinstance(index, int):
@@ -487,6 +492,11 @@ class Layer:
         raise TypeError(f'Layer indices must be integers or strings, not {type(index).__name__}')
 
     def __iadd__(self, other):
+        """
+        Implements += add functionality for layer classes
+        :param other: a layer instance
+        :return: self; class instance
+        """
         if self.validate_type_and_dimension(other):
             components = (x + y for x, y in zip(self.components, other.components))
             self._components = tuple(components)
@@ -494,59 +504,118 @@ class Layer:
         raise NotImplemented
 
     def __len__(self):
+        """
+        Implements length functionality
+        :return: length of self instance
+        """
         return len(self)
 
     def __iter__(self):
+        """
+        Implements iterator functionality
+        :return: iterate over self instance
+        """
         return iter(self)
 
     def __call__(self, xs, loss=None, ys=None):
-        #    print(xs, loss, ys)
+        """
+        Abstract call method with later purpose to call the next layer.
+        :param xs; nested list of lists. XS receives attributes of a list instances
+        :param loss: loss function
+        :param ys; nested list of lists. YS contains the true labels.
+        :return:
+        """
         raise NotImplementedError('Abstract __call__ method')
 
     def add(self, next):
-        if self.next is None:
+        """
+        Set outputs of current layer as inputs for the next layer.
+        :param next:
+        :return:
+        """
+        if self.next is None:  # set Input layer as first layer
             self.next = next
             next.set_inputs(self.outputs)  # stuur output van deze layer naar layer volgende laag als input
-        else:
+        else: # set next layer after a previous layer exists
             self.next.add(next)
 
     def set_inputs(self, inputs):
+        """
+        Initialise inputs
+        :param inputs: outputs set as inputs
+        """
         self.inputs = inputs
 
 
-class InputLayer(Layer):  # dus hier geef je de begin data door
-
-    def __repr__(self):
+class InputLayer(Layer):
+    """
+    Layer that receives start data
+    """
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the input layer
+        """
         text = f'InputLayer(outputs={self.outputs}, name={repr(self.name)})'
         if self.next is not None:
             text += ' + ' + repr(self.next)
         return text
 
     def set_inputs(self):
+        """
+        Set inputs is not implemented in this class as it passes the outputs as inputs to the Dense layer. Meaning
+        no input initialisation is needed here.
+        """
         raise (NotImplementedError)
 
     def __call__(self, xs, ys=None, alpha=None):
-        return self.next(xs, ys=ys, alpha=alpha)  # input naar Denselayer
+        """
+        Call next layer and pass input instances, true labels and alpha to the next layer
+        :param xs; nested list of lists. XS receives attributes of a list instances
+        :param ys; nested list of lists. YS contains the true labels.
+        :param alpha: learning rate, defaulted to None
+        :return: self.next; the next layer that is the Dense layer
+        """
+        return self.next(xs, ys=ys, alpha=alpha)
 
     def predict(self, xs):
+        """
+        Send the start input to the Dense layer.
+        Receive the final predicted yhats and return them
+        :param xs; nested list of lists. XS receives attributes of a list instances
+        :return: final predicted yhats
+        """
         yhats, ls, gs = self(xs)
-        return yhats  # eind voorspellingen naar de vorige layer
+        return yhats
 
     def evaluate(self, xs, ys):
-        yhats, ls, gs = self(xs, ys=ys)  # de call van DenseLayer
+        """
+        Evaluate the average loss. Send xs and ys to the Dense layer and receive the loss value.
+        :param xs; nested list of lists. XS receives attributes of a list instances
+        :param ys; nested list of lists. YS contains the true labels.
+        :return: l_mean; average loss
+        """
+        yhats, ls, gs = self(xs, ys=ys)  # call of dense layer
         l_mean = sum(ls) / len(ls)
         return l_mean
 
     def partial_fit(self, xs, ys, batch_size=None, alpha=0.001):
-        if batch_size == None:
+        """
+        Initialise a batch_size and send batches to the Dense layer. The Dense layer returns predictions, loss
+        and the gradients. Though only the losses are used for calculating the average loss over all batches
+        :param xs; nested list of lists. XS receives attributes of a list instances
+        :param ys; nested list of lists. YS contains the true labels.
+        :param batch_size: size of batch (data set size), defaulted to the entire data set
+        :param alpha: learning rate, defaulted to 0.001
+        :return: mean of loss
+        """
+        if batch_size is None:
             batch_size = len(xs)
 
-        # batch_size = int(len(xs)/batch_size) # determine step from percentage input
         loss_sum, loss_len = 0, 0
         for batch in range(0, len(xs), batch_size):  # from zero to length of list in steps of batch_size
-            xsBatch = xs[batch:batch + batch_size]
-            ysBatch = ys[batch:batch + batch_size]
-            yhats, ls, gs = self(xsBatch, ys=ysBatch, alpha=alpha)  # de call van DenseLayer
+            xs_batch = xs[batch:batch + batch_size]
+            ys_batch = ys[batch:batch + batch_size]
+            yhats, ls, gs = self(xs_batch, ys=ys_batch, alpha=alpha)  # de call van DenseLayer
             loss_sum += sum(ls)
             loss_len += len(ls)
 
@@ -554,12 +623,21 @@ class InputLayer(Layer):  # dus hier geef je de begin data door
         return l_mean
 
     def fit(self, xs, ys, *, validation_data=(None, None), batch_size=None, alpha=0.001, epochs=100):
-        from random import seed, shuffle, Random
-
+        """
+        Invoke partial fitting over n epochs. Also, evaluate the mean loss between the predictions and true labels.
+        Xs and ys are shuffled randomly, so that every epoch will have unique training and validation.
+        :param xs; nested list of lists. XS receives attributes of a list instances
+        :param ys; nested list of lists. YS contains the true labels.
+        :param validation_data: Tuple of instances and true labels to test on for validation
+        :param batch_size: size of batch (data set size), defaulted to the entire data set
+        :param alpha: learning rate, defaulted to 0.001
+        :param epochs; number of epochs (full runs) to partially fit on, defaulted to 100
+        :return: history dictionary containing either, only training loss values or includes validation loss values
+        """
         if epochs > 0:  # choose number of epochs to iterate over
             history = {'loss': []}
             history.update(
-                {'val_loss': []} if all(validation_data) else history)  # if validation_data values are not empty
+                {'val_loss': []} if all(validation_data) else history)  # add validation_data loss values if not empty
             for epoch in range(epochs):
                 seed(1234)  # same seed
                 r = Random(1234)  # same seed
@@ -568,8 +646,8 @@ class InputLayer(Layer):  # dus hier geef je de begin data door
                 l_mean = self.partial_fit(xs=xs, ys=ys, batch_size=batch_size, alpha=alpha)
                 history['loss'].append(l_mean)
                 if len(history) == 2:  # two keys are present
-                    xsVal, ysVal = validation_data
-                    vl_mean = self.evaluate(xsVal, ysVal)
+                    xs_val, ys_val = validation_data
+                    vl_mean = self.evaluate(xs_val, ys_val)
                     history['val_loss'].append(vl_mean)
             return history
         elif epochs <= 0:  # not allowed epochs input
@@ -577,174 +655,258 @@ class InputLayer(Layer):  # dus hier geef je de begin data door
 
 
 class DenseLayer(Layer):
+    """
+    Layer that penalizes weights and biases when the model is making mistakes. It introduces gradient descent, i.e.
+    slowly slope down to the correct values to predict. Also, pre-activation values are calculated.
+    """
     def __init__(self, outputs, name=None, next=None):
+        """
+        Construct the Dense layer
+        :param outputs: Outputs of previous layer that will be sent as input to next layer. Initially instances of xs.
+        :param name: The name of the initialised layer
+        :param next: Points to the next layer
+        """
         self.name = name
-        super().__init__(outputs, name=name, next=next)
-        self.bias = [0.0 for _ in range(0, self.outputs)]  # aantal biases gelijk aan aantal neurons
+        self.bias = [0.0 for _ in range(0, self.outputs)]  # number of baises equal to neurons
         self.weights = None
 
-    def __repr__(self):
+        super().__init__(outputs, name=name, next=next)  # send outputs, name and next layer info to parent layer
+
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the Dense layer
+        """
         text = f'DenseLayer(outputs={self.outputs}, name={repr(self.name)})'
         if self.next is not None:
             text += ' + ' + repr(self.next)
         return text
 
     def set_inputs(self, inputs):
-        # print(inputs)
-        if inputs is not None:
+        """
+        If inputs are received from the input layer, set random weights for each input over all neurons
+        :param inputs: xs; nested list of lists. XS receives attributes of a list instances
+        """
+        if inputs is not None:  # check if inputs are received from input layer
             self.inputs = inputs
 
-            border: float = (6 / (inputs + self.outputs)) ** (1 / 2)
+            border: float = (6 / (inputs + self.outputs)) ** (1 / 2)  # set range value to randomize in between
             self.weights = [[uniform(-border, border) for i in range(inputs)] for _ in
-                            range(self.outputs)]  # aantal weights (i) in een aantal neurons (o)
+                            range(self.outputs)]  # number of weights (i) in number of neurons (o)
 
     def __call__(self, xs, ys=None, alpha=None):
-        # print(xs)
-        # print(ys)
-        # print(alpha)
-        aa = []  # Uitvoerwaarden voor alle instances xs
-        # print(self.weights)
-        for n in range(len(xs)):  # instances
-            a = []  # Uitvoerwaarde voor één instance x
-            for o in range(self.outputs):  # neuronen
-                # Bereken voor elk neuron o met de lijst invoerwaarden x de uitvoerwaarde
+        """
+        Call next Activation (or Softmax activation) layer and send pre-activation values, true labels and alpha.
+        Receive from the next layer the predicted y_hats, loss values and gradient descent values.
+        Pre-activation values are calculated, biases and weights are updated.
+        :param xs; nested list of lists. XS receives attributes of a list instances
+        :param ys; nested list of lists. YS contains the true labels.
+        :param alpha: learning rate, defaulted to None
+        :return: yhats, ls, qs; predictions, losses and gradient descent values
+        """
+        aa = []  # Output values for all instances in xs
+        for n in range(len(xs)):  # Instances
+            a = []  # Output value for one instance x
+            for o in range(self.outputs):  # Neurons
+                # Calculate the output (pre-activation) value for each neuron o with the list of input values x
                 preactivation = self.bias[o]
                 for i in range(self.inputs):
                     preactivation += self.weights[o][i] * xs[n][i]
                 a.append(preactivation)
             aa.append(a)
-        yhats, ls, gs = self.next(aa, ys=ys, alpha=alpha)  # van de activationlayer = naar de activationlayer
-        # print(gs)
-        # print("dense", self.next) # waar gaat de data heen
-        # print("dense", self.inputs)
-        # bereken qs (nieuwe gradiënten)
+        yhats, ls, gs = self.next(aa, ys=ys, alpha=alpha)  # from activation layer <=> to activation layer
+        # Calculate qs (new gradients)
         qs = None
-        if alpha is not None:  # als er een learning rate is, wil je een gradient descent
+        if alpha is not None:  # If there is a learning rate, you want a gradient descent
             qs = []
-            for n in range(len(xs)):  # instances
+            for n in range(len(xs)):  # Instances
                 q = []
-                for i in range(self.inputs):  # neuronen, elke output van inputlayer als input
+                for i in range(self.inputs):  # Neurons, each output of input layer as input
                     gradient = sum(gs[n][o] * self.weights[o][i] for o in range(self.outputs))
                     q.append(gradient)
                 qs.append(q)
-                # updaten gewichten en biases
-                for o in range(self.outputs):  # update weights and biases for each output
+                # Update weights and biases for each output and input
+                for o in range(self.outputs):
                     update = alpha / len(xs) * gs[n][o]
-                    self.bias[o] -= update  # update bias
-                    for i in range(self.inputs):  # update weights
-                        self.weights[o][i] -= update * xs[n][i]
-        return yhats, ls, qs  # naar inputlayer, maar wordt daar niet gebruikt
+                    self.bias[o] -= update  # Update bias
+                    for i in range(self.inputs):
+                        self.weights[o][i] -= update * xs[n][i] # Update weights
+        return yhats, ls, qs  # To input layer
 
 
-class ActivationLayer(Layer):  # algemene uitvoerlaag
+class ActivationLayer(Layer):
+    """
+    General output layer. Calculates predictions with an activation function.
+    """
     def __init__(self, outputs, activation=linear, beta=1, name=None, next=None):
+        """
+        Construct the Activation layer
+        :param outputs: Pre-activation values of previous Dense layer that will be used to calculate output values
+        :param activation; Activation function to be passed, defaulted linear
+        :param beta; If an activation function requires a trainable beta parameter, defaulted to 1, i.e. constant
+        :param name: The name of the initialised layer
+        :param next: Points to the next layer
+        """
         self.activation = activation
         self.name = name
         self.activation_gradient = derivative(self.activation)
         self.beta = beta
 
-        super().__init__(outputs, name=name, next=next)
+        super().__init__(outputs, name=name, next=next)  # send outputs, name and next layer info to parent layer
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the Activation layer
+        """
         text = f'ActivationLayer(outputs={self.outputs}, name={repr(self.name)}, activation={self.activation.__name__})'
         if self.next is not None:
             text += ' + ' + repr(self.next)
         return text
 
-    def __call__(self, xs, ys=None, alpha=None):
-
-        hh = []  # Uitvoerwaarden voor alle instances xs
-        for x in xs:  # eigenlijk a in aa, instances
-            h = []  # Uitvoerwaarde voor één instance x
-            for o in range(self.outputs):  # neuronen
-                # Bereken voor elk neuron o met de lijst invoerwaarden x de uitvoerwaarde
+    def __call__(self, xs, ys=None, alpha=None) -> "yhats, ls, qs":
+        """
+        Call next loss layer and send output (predictions), true labels and alpha. The loss layer returns
+        the same predictions to this layer, the calculated losses and the gradient descent values.
+        New gradient descent values are calculated with the derived activation function.
+        :param xs; Pre-activation values of previous Dense layer that will be used to calculate output values
+        :param ys; nested list of lists. YS contains the true labels.
+        :param alpha: learning rate, defaulted to None
+        :return: yhats, ls, qs; predictions, losses and gradient descent values
+        """
+        hh = []  # aa : Output values for all instances of xs
+        for x in xs:  # Each instance (list) in the list of all instances
+            h = []  # Output value for one instance x
+            for o in range(self.outputs):  # Neurons
+                # Calculate the output value for each neuron o with the list of input values x.
                 h_no = self.activation(x[o], self.beta)
                 h.append(h_no)
             hh.append(h)
-            # hh.append([self.activation(x[o]) for o in range(self.outputs)])
-        yhats, ls, gs = self.next(hh, ys=ys, alpha=alpha)  # van de denselayer = naar de losslayer
-        # print("activation", self.next) # waar gaat de data heen
-        # print("activation", self.inputs)
-        qs = None  # gradient descent
-        if alpha is not None:
+        yhats, ls, gs = self.next(hh, ys=ys, alpha=alpha)  # from Dense layer <=> to the Loss layer
+        qs = None  # Gradient descent
+        if alpha is not None:  # If there is a learning rate, you want a gradient descent
             qs = []
-            for n in range(len(xs)):  # itereer over instances
+            for n in range(len(xs)):  # Iterate over instances
                 q = []
-                for o in range(self.inputs):  # itereer over neuronen, inputs van outputs vorige laag
+                for o in range(self.inputs):  # Iterate over neurons o, inputs of outputs from previous layer
                     gradient = gs[n][o] * self.activation_gradient(xs[n][o])
                     q.append(gradient)
                 qs.append(q)
-        return yhats, ls, qs  # naar denselayer
+        return yhats, ls, qs  # To dense layer
 
 
 class SoftmaxLayer(Layer):  # uitvoerlaag neurale netwerken
+    """
+    Output layer of neural networks. Calculates predictions with softmax activation function.
+    """
     def __init__(self, outputs, name=None, next=None):
-        super().__init__(outputs, name=name, next=next)
+        """
+        Construct the Softmax activation layer
+        :param outputs: Pre-activation values of previous Dense layer that will be used to calculate output values
+        :param name: The name of the initialised layer
+        :param next: Points to the next layer
+        """
+        super().__init__(outputs, name=name, next=next) # send outputs, name and next layer info to parent layer
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the SoftMax activation layer
+        """
         text = f'ActivationLayer(outputs={self.outputs}, name={repr(self.name)})'
         if self.next is not None:
             text += ' + ' + repr(self.next)
         return text
 
-    def __call__(self, xs, ys=None, alpha=None):
+    def __call__(self, xs, ys=None, alpha=None) -> "yhats, ls, gs":
+        """
+        Call next loss layer and send output (predictions), true labels and alpha. The loss layer returns
+        the same predictions to this layer, the calculated losses and the gradient descent values.
+        :param xs; Pre-activation values of previous Dense layer that will be used to calculate output values
+        :param ys; nested list of lists. YS contains the true labels.
+        :param alpha: learning rate, defaulted to None
+        :return: yhats, ls, qs; predictions, losses and gradient descent values
+        """
         yhat_noses = []  # hh : list with for each instance a list of yhat predictions of each output
         for n in range(len(xs)):
-            yhat_nose = []  # not final prediction list
+            yhat_nose = []  # List with predictions of an instance
             max_val = max(xs[n])
-            for o in range(self.outputs):  # i == o in aantal inputs == outputs
+            for o in range(self.outputs):  # i == o for n inputs == outputs
                 xs[n][o] = xs[n][o] - max_val
 
                 yhat_no = e ** xs[n][o]
-                yhat_nose.append(yhat_no)  # fill list with noemers
-            yhat_sum = sum(yhat_nose)  # calculate sum of all outputs for given instance
-            yhat_nose = [i / yhat_sum for i in yhat_nose]  # where i = e^x_no
+                yhat_nose.append(yhat_no)  # Fill list with denominators
+            yhat_sum = sum(yhat_nose)  # Calculate sum of all outputs for given instance
+            yhat_nose = [i / yhat_sum for i in yhat_nose]  # Where i = e^x_no (yhat_nose get overwritten with outputs)
             yhat_noses.append(yhat_nose)
 
-        yhats, ls, gs = self.next(yhat_noses, ys=ys, alpha=alpha)  # van de denselayer = naar de losslayer
+        yhats, ls, gs = self.next(yhat_noses, ys=ys, alpha=alpha)  # from Dense layer <=> to the Loss layer
 
-        qs = None  # gradient descent
+        qs = None  # Gradient descent
         if alpha is not None:
             qs = []
-            for n in range(len(xs)):  # itereer over instances
+            for n in range(len(xs)):  # Iterate over instances
                 q = []
-                for i in range(self.inputs):  # itereer over neuronen, inputs van outputs vorige laag
+                for i in range(self.inputs):  # Iterate over neurons o, inputs of outputs from previous layer
+                    # Calculate gradient descent value
                     gradient = sum(gs[n][o] * yhats[n][o] * ((o == i) - yhats[n][i]) for o in range(self.outputs))
                     q.append(gradient)
                 qs.append(q)
-        return yhats, ls, qs  # naar denselayer
+        return yhats, ls, qs  # To dense layer
 
 
 class LossLayer(Layer):
+    """
+    Evaluation loss layer. Calculates losses and loss gradient values- (-with the derived loss function).
+    Predictions received from the activation layer are used,
+    but not altered i.e. are returned identical to the activation layer.
+    This is the last layer! There is no next.
+    """
     def __init__(self, loss=mean_squared_error, name=None):
+        """
+        Construct loss layer.
+        :param loss: Function to calculate loss, defaulted to mean_squared_error.
+        The loss value shows the closer to zero the better is the prediction accuracy.
+        :param name: The name of the initialised layer.
+        """
         self.loss = loss
         self.name = name
         self.loss_gradient = derivative(self.loss)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the loss layer
+        """
         text = f'LossLayer(name={repr(self.name)}, loss={self.loss.__name__})'
         return text
 
     def add(self):
+        """
+        Since there is no next layer, functionality to add disappears.
+        :return:
+        """
         raise (NotImplementedError)
 
-    def __call__(self, xs, ys=None, alpha=None) -> list:
-        # print("loss",self.inputs)
+    def __call__(self, xs, ys=None, alpha=None) -> "yhat, ls, gs":
+        """
+        No call to next layer. But loss values and gradients descent loss values are calculated.
+        :param xs; Activation values of previous activation layer that will be used to calculate loss values
+        :param ys; nested list of lists. YS contains the true labels.
+        :param alpha: learning rate, defaulted to None
+        :return: yhats, ls, gs; predictions, losses and gradient descent values
+        """
         yhats = xs
         ls, gs = None, None
         if ys is not None:
             ls = []
-            for n in range(len(xs)):  # instances
+            for n in range(len(xs)):  # Instances
                 loss = 0.0
                 for i in range(self.inputs):
-                    loss += self.loss(yhats[n][i], ys[n][i])
+                    loss += self.loss(yhats[n][i], ys[n][i]) # calculate loss values
                 ls.append(loss)
             if alpha is not None:
                 gs = []
                 for n in range(len(xs)):
                     g = []
                     for i in range(self.inputs):
-                        gradient = self.loss_gradient(yhats[n][i], ys[n][i])
+                        gradient = self.loss_gradient(yhats[n][i], ys[n][i]) # calculate gradient descent loss values
                         g.append(gradient)
                     gs.append(g)
-        return yhats, ls, gs  # naar activationlayer
+        return yhats, ls, gs  # To activation layer
