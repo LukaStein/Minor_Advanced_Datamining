@@ -62,9 +62,9 @@ class Perceptron:
             y_new = self.bias + sum(self.weights[xi] * x[xi] for xi in range(len(x)))
             predict_label = lambda x: -1.0 if x < 0 else (0.0 if x == 0 else 1.0)
             yhat_new = predict_label(y_new)
-            yhat_new_predictions.append(yhatNew)
+            yhat_new_predictions.append(yhat_new)
             index += 1
-        return yhatNewPredictions
+        return yhat_new_predictions
 
     def fit(self, xs, ys, *, epochs=0):
         """
@@ -354,7 +354,7 @@ class Neuron:
         passed here.
         :param dim: dimensions of an instance
         :param activation: activation function, per default linear
-        :param loss: loss_function, per default linear
+        :param loss: loss_function, per default mean_squared_error
         """
         self.dim = dim
         self.bias = 0
@@ -384,7 +384,7 @@ class Neuron:
             # Initial prediction
             y_value = y_value + self.bias
             # Save predictions
-            predictions_yhats.append(yValue)
+            predictions_yhats.append(y_value)
         return predictions_yhats
 
     def partial_fit(self, xs, ys, *, alpha=0.01) -> list:
@@ -398,19 +398,20 @@ class Neuron:
         :return: predictions_updated_yhat; partially fitted predictions
         """
         yhat: list = self.predict(xs)
-        index = 0  # aantal voorspelde labels moet gelijk zijn aan aantal echte labels
+        index = 0  # number of predicted labels has to be equal to number of true labels
         predictions_updated_yhat = []
-        dl_dhat = derivative(self.loss)  # mean_squared_error per default, geef functie aan derivative
-        dyhat_da = derivative(self.activation)
-        for xCoords, yOld in zip(xs, ys):  # yOld is echte label
-            self.bias = self.bias - (alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha))
-            for xi in range(len(xCoords)):
+        dl_dhat = derivative(self.loss)  # pass the loss function to get its derivative
+        dyhat_da = derivative(self.activation)  # pass the activation function to get its derivative
+
+        for xCoords, yOld in zip(xs, ys):  # yOld is the true label
+            self.bias = self.bias - (alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha)) # update bias
+            for xi in range(len(xCoords)):  
                 self.weights[xi] = self.weights[xi] - (
-                        alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha) * xCoords[xi])
-            # voorspellingen opnieuw doen
+                        alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha) * xCoords[xi]) # update weights
+            # Redo value predictions
             y_new = self.bias + sum(self.weights[xi] * xCoords[xi] for xi in range(len(xCoords)))
 
-            yhat_update = self.activation(y_new)
+            yhat_update = self.activation(y_new) # predict labels
             predictions_updated_yhat.append(yhat_update)
             index += 1
         return predictions_updated_yhat
@@ -424,10 +425,10 @@ class Neuron:
         :param alpha; learning rate, defaulted to 0.001
         :param epochs; number of epochs (full runs) to partially fit on, defaulted to 100
         """
-        if epochs > 0:  # choose number of epochs to iterate over
+        if epochs > 0:  # Choose number of epochs to iterate over
             for _ in range(epochs):
                 self.partial_fit(xs, ys, alpha=alpha)
-        elif epochs <= 0:  # not allowed epochs input
+        elif epochs <= 0:  # Not allowed epochs input
             print("Epoch below 0 isn't allowed")
 
 
@@ -667,10 +668,10 @@ class DenseLayer(Layer):
         :param next: Points to the next layer
         """
         self.name = name
+        super().__init__(outputs, name=name, next=next)  # send outputs, name and next layer info to parent layer
         self.bias = [0.0 for _ in range(0, self.outputs)]  # number of baises equal to neurons
         self.weights = None
 
-        super().__init__(outputs, name=name, next=next)  # send outputs, name and next layer info to parent layer
 
     def __repr__(self) -> str:
         """
