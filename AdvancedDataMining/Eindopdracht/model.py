@@ -168,7 +168,7 @@ class LinearRegression:
             print("Epoch below 0 isn't allowed")
 
 
-def linear(a) -> float|int:  # activation function
+def linear(a, *args) -> tuple[float, int]:  # activation function
     """
     Identify function returns the predicted y-value that it receives
     :param a; predicted y-value
@@ -177,7 +177,7 @@ def linear(a) -> float|int:  # activation function
     return a
 
 
-def sign(y_value) -> float:  # activation function
+def sign(y_value, *args) -> float:  # activation function
     """
     Signum function that returns -1 for negative y-values, 0 for neutral y-values
     and 1 for positive y-values
@@ -188,7 +188,7 @@ def sign(y_value) -> float:  # activation function
     return predict_label(y_value)
 
 
-def tanh(y_value) -> float:  # activation function
+def tanh(y_value, *args) -> float:  # activation function
     """
     Tangens hyperbolic function flattens the slope of signum function
     :param y_value: predicted y-value
@@ -211,7 +211,7 @@ def sigmoid(y_value, beta=1) -> float:  # activation function
     return 1 / (1 + e ** -(beta * y_value))
 
 
-def softsign(y_value) -> float:  # activation function
+def softsign(y_value, *args) -> float:  # activation function
     """
     Softsign function provides non-linearity
     :param y_value: predicted y-value
@@ -220,7 +220,7 @@ def softsign(y_value) -> float:  # activation function
     return y_value / (1 + abs(y_value))
 
 
-def softplus(y_value) -> float:  # activation function
+def softplus(y_value, *args) -> float:  # activation function
     """
     Softplus function provides non-linearity, but can't calculate negative y-values i.e. y.min = 0.
     Softplus is the average of the relu function and provides a gradual slope.
@@ -232,7 +232,7 @@ def softplus(y_value) -> float:  # activation function
     return log(1 + e ** y_value)
 
 
-def relu(y_value) -> int|float:  # activation function
+def relu(y_value, *args) -> int:  # activation function
     """
     Relu function provides linearity with a slope of 0 or 1, but can't calculate negative y-values i.e. y.min = 0.
     :param y_value: predicted y-value
@@ -246,54 +246,97 @@ def swish(y_value, beta=1) -> float:  # activation function
     Swish function receives a trainable parameter beta and is the sigmoid function times the y_value.
      Per default, beta is 1.
     :param beta:
-    :param y_value:
-    :param B:
-    :return:
+    :param y_value: predicted y-value
+    :param beta: The trainable parameter beta can be adjusted.
+    :return: adjusted y_value
     """
     return y_value * sigmoid(y_value, beta)
 
 
-def nipuna(y_value, beta=3) -> int|float:  # activation function
+def nipuna(y_value, beta=1) -> float:  # activation function
     """
-    The nipuna function is a newer function that compares the output of the swish function with the y_value.  
+    The nipuna function is a newer function that compares the output of the swish function with the y_value.
+    :param y_value: predicted y-value
+    :param beta: The trainable parameter beta can be adjusted.
+    :return: adjusted y_value
     """
     return max(swish(y_value, beta), y_value)
 
 
 def mean_squared_error(yhat, y):  # loss
-    # print("mean", y)
+    """
+    Calculates the mean squared error between true and predicted labels
+    :param yhat: predicted y-value
+    :param y: true y-value
+    :return: loss value
+    """
     return (yhat - y) ** 2
 
 
 def mean_absolute_error(yhat, y):  # loss
+    """
+    Calculates the mean absolute error between true and predicted labels
+    :param yhat: predicted y-value
+    :param y: true y-value
+    :return: loss value
+    """
     return abs(yhat - y)
 
 
 def hinge(yhat, y):  # loss
+    """
+    Calculates the hinge loss, by comparing if the loss is larger than 0.
+    :param yhat: predicted y-value
+    :param y: true y-value
+    :return: loss value
+    """
     return max(1 - yhat * y, 0)
 
 
-def categorical_crossentropy(yhat_no, y_no, e=0.01):  # loss
-    if yhat_no >= e:  # if not to close to zero
+def categorical_crossentropy(yhat_no, y_no, epsilon=0.01):  # loss
+    """
+    Calculates the categorical cross entropy loss for multi nominal classification problems
+    :param yhat_no:
+    :param y_no:
+    :param epsilon:
+    :return: loss value
+    """
+    if yhat_no >= epsilon:  # if not to close to zero
         return -y_no * log(yhat_no)
-    return -y_no * (log(e) + (yhat_no - e) / e)  # else take log of e instead of yhat_no
+    return -y_no * (log(epsilon) + (yhat_no - epsilon) / epsilon)  # else take log of e instead of yhat_no
 
 
-def binary_crossentropy(yhat_no, y_no, e=0.01):  # loss
-    logE = (log(e) + (yhat_no - e / e))
-    logYhat, logYhat2 = logE, logE
-    if yhat_no >= e:  # if not to close to zero
-        logYhat = log(yhat_no)
-    if 1 - yhat_no >= e:
-        logYhat2 = log(1 - yhat_no)
-    return -y_no * logYhat - (1 - y_no) * logYhat2  # else take log of e instead of yhat_no
-    # (log(e) + (yhat_no - e / e))
+def binary_crossentropy(yhat_no, y_no, epsilon=0.01):  # loss
+    """
+    Calculates the binary cross entropy loss for bi-nominal classification problems i.e. 0 or 1
+    :param yhat_no:
+    :param y_no:
+    :param epsilon:
+    :return: loss value
+    """
+    log_e = (log(epsilon) + (yhat_no - epsilon / epsilon))  # log_e formula if log(yhat_no) invokes a math domain error
+    log_yhat, log_yhat2 = log_e, log_e  # assign log_yhat to error prevention per default
+    if yhat_no >= epsilon:  # if not to close to zero
+        log_yhat = log(yhat_no)
+    if 1 - yhat_no >= epsilon:  # if not to close to zero
+        log_yhat2 = log(1 - yhat_no)
+    return -y_no * log_yhat - (1 - y_no) * log_yhat2  # binary cross-entropy formula
 
 
-def derivative(function, delta=0.8):
-    def wrapper_derivative(x, *args):
-        # print("wrapper", args) # probleem is dat y niet geupdate wordt en dus op 0 blijft
-        # print(function(x + delta*x, *args))
+def derivative(function, delta=0.05) -> "wrapper_derivative":
+    """
+    Returns derivative of either an activation function or loss function
+    :param function: Any activation or loss function
+    :param delta: step size for delta x
+    :return: derived function made with wrapper_derivative
+    """
+    def wrapper_derivative(x, *args) -> "derived_function":
+        """
+        Calculate derivative of either an activation function or loss function
+        :param x: Any activation or loss function
+        :param args: optional arguments
+        :return: derived function of received function
+        """
         wrapper_derivative.__name__ = function.__name__ + "'"
         wrapper_derivative.__qualname__ = function.__qualname__ + "'"
         return (function(x + delta, *args) - function(x - delta, *args)) / (2 * delta)
@@ -301,7 +344,11 @@ def derivative(function, delta=0.8):
     return wrapper_derivative
 
 
-class Neuron():
+class Neuron:
+    """
+    Cell body (neuron) is activated by impulse from a dendrite.
+    Can predict and perform regression
+    """
     def __init__(self, dim, activation=linear, loss=mean_squared_error):
         self.dim = dim
         self.bias = 0
@@ -361,7 +408,7 @@ class Neuron():
             print("Epoch below 0 isn't allowed")
 
 
-class Layer():
+class Layer:
     layercounter = Counter()
 
     def __init__(self, outputs, *, name=None, next=None):
@@ -480,7 +527,6 @@ class InputLayer(Layer):  # dus hier geef je de begin data door
                 history['loss'].append(l_mean)
                 if len(history) == 2:  # two keys are present
                     xsVal, ysVal = validation_data
-                    # vl_mean = self.partial_fit(xs=xsVal, ys=ysVal, alpha=None) # no alpha, means no learning, only validation
                     vl_mean = self.evaluate(xsVal, ysVal)
                     history['val_loss'].append(vl_mean)
             return history
@@ -549,10 +595,11 @@ class DenseLayer(Layer):
 
 
 class ActivationLayer(Layer):  # algemene uitvoerlaag
-    def __init__(self, outputs, activation=linear, name=None, next=None):
+    def __init__(self, outputs, activation=linear, beta=1, name=None, next=None):
         self.activation = activation
         self.name = name
         self.activation_gradient = derivative(self.activation)
+        self.beta = beta
 
         super().__init__(outputs, name=name, next=next)
 
@@ -569,7 +616,7 @@ class ActivationLayer(Layer):  # algemene uitvoerlaag
             h = []  # Uitvoerwaarde voor één instance x
             for o in range(self.outputs):  # neuronen
                 # Bereken voor elk neuron o met de lijst invoerwaarden x de uitvoerwaarde
-                h_no = self.activation(x[o])
+                h_no = self.activation(x[o], self.beta)
                 h.append(h_no)
             hh.append(h)
             # hh.append([self.activation(x[o]) for o in range(self.outputs)])
