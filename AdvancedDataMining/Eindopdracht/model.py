@@ -3,7 +3,7 @@ from collections import Counter
 from copy import deepcopy
 from math import e, log  # natural value and log
 from random import uniform, shuffle
-
+from typing import List, Callable, Dict, Tuple
 
 class Perceptron:
     """
@@ -25,7 +25,7 @@ class Perceptron:
         text = f'Perceptron(dim={self.dim})'
         return text
 
-    def predict(self, xs) -> list:
+    def predict(self, xs : List[List[int]]) -> List[int]:
         """
         Predict classifier in a single class problem
         :param self:
@@ -42,7 +42,7 @@ class Perceptron:
             predictions_yhat.append(yhat)
         return predictions_yhat
 
-    def partial_fit(self, xs, ys):
+    def partial_fit(self, xs : List[List[int]], ys : List[int]) -> int:
         """
         Adjust weights and biases to partially fit/correct the predictions
         :param xs: nested list of lists. XS receives attributes of a list instances
@@ -61,7 +61,7 @@ class Perceptron:
                 converge_steps += 1
         return converge_steps
 
-    def fit(self, xs, ys, *, epochs=0):
+    def fit(self, xs : List[List[int]], ys : List[int], *, epochs=0) -> None:
         """
         Keep invoking the partially fit function over n epochs or if epochs=0
         run infinite epochs until all predictions are correct
@@ -107,7 +107,7 @@ class LinearRegression:
         text = f'Perceptron(dim={self.dim})'
         return text
 
-    def predict(self, xs) -> list:
+    def predict(self, xs : List[List[int]]) -> List[int]:
         """
         Predict classifier in a single class problem
         :param self:
@@ -127,7 +127,7 @@ class LinearRegression:
             predictions_yhats.append(y_value)
         return predictions_yhats
 
-    def partial_fit(self, xs, ys, *, alpha=0.01) -> list:
+    def partial_fit(self, xs : List[List[int]], ys : List[int], *, alpha=0.01) -> None:
         """
         Adjust weights and biases to partially fit/correct the predictions
         :param self:
@@ -145,7 +145,7 @@ class LinearRegression:
                 self.weights[xi] = self.weights[xi] - alpha * (yhats[index] - yOld) * x[xi]
             index += 1
 
-    def fit(self, xs, ys, *, alpha=0.001, epochs=100):
+    def fit(self, xs : List[List[int]], ys : List[int], *, alpha=0.001, epochs=100) -> None:
         """
         Keep invoking the partially fit function over n epochs or if n=0
         run infinite epochs until all predictions are correct
@@ -162,7 +162,7 @@ class LinearRegression:
             print("Epoch below 0 isn't allowed")
 
 
-def linear(a, *args) -> tuple[float, int]:  # activation function
+def linear(a : int) -> tuple[float, int]:  # activation function
     """
     Identify function returns the predicted y-value that it receives
     :param a; predicted y-value
@@ -171,7 +171,7 @@ def linear(a, *args) -> tuple[float, int]:  # activation function
     return a
 
 
-def sign(y_value, *args) -> float:  # activation function
+def sign(y_value : int) -> float:  # activation function
     """
     Signum function that returns -1 for negative y-values, 0 for neutral y-values
     and 1 for positive y-values
@@ -182,7 +182,7 @@ def sign(y_value, *args) -> float:  # activation function
     return predict_label(y_value)
 
 
-def tanh(y_value, *args) -> float:  # activation function
+def tanh(y_value : int) -> float:  # activation function
     """
     Tangens hyperbolic function flattens the slope of signum function
     :param y_value: predicted y-value
@@ -196,7 +196,7 @@ def tanh(y_value, *args) -> float:  # activation function
         return (e ** y_value - e ** -y_value) / (e ** y_value + e ** -y_value)
 
 
-def sigmoid(y_value, beta=1) -> float:  # activation function
+def sigmoid(y_value : int, beta=1) -> float:  # activation function
     """
     Sigmoid function that adds the natural log e in the equation.
     :param y_value: predicted y-value
@@ -208,7 +208,7 @@ def sigmoid(y_value, beta=1) -> float:  # activation function
     return 1 / (1 + e ** -(beta * y_value))
 
 
-def softsign(y_value, *args) -> float:  # activation function
+def softsign(y_value : int) -> float:  # activation function
     """
     Softsign function provides non-linearity
     :param y_value: predicted y-value
@@ -217,7 +217,7 @@ def softsign(y_value, *args) -> float:  # activation function
     return y_value / (1 + abs(y_value))
 
 
-def softplus(y_value, *args) -> float:  # activation function
+def softplus(y_value : int) -> float:  # activation function
     """
     Softplus function provides non-linearity, but can't calculate negative y-values i.e. y.min = 0.
     Softplus is the average of the relu function and provides a gradual slope.
@@ -229,7 +229,7 @@ def softplus(y_value, *args) -> float:  # activation function
     return log(1 + e ** y_value)
 
 
-def relu(y_value, *args) -> int:  # activation function
+def relu(y_value : int) -> float:  # activation function
     """
     Relu function provides linearity with a slope of 0 or 1, but can't calculate negative y-values i.e. y.min = 0.
     :param y_value: predicted y-value
@@ -238,7 +238,7 @@ def relu(y_value, *args) -> int:  # activation function
     return max(0, y_value)
 
 
-def swish(y_value, beta=1) -> float:  # activation function
+def swish(y_value : int, beta=1) -> float:  # activation function
     """
     Swish function receives a trainable parameter beta and is the sigmoid function times the y_value.
      Per default, beta is 1.
@@ -250,7 +250,7 @@ def swish(y_value, beta=1) -> float:  # activation function
     return y_value * sigmoid(y_value, beta)
 
 
-def nipuna(y_value, beta=1) -> float:  # activation function
+def nipuna(y_value : int, beta=1) -> float:  # activation function
     """
     The nipuna function is a newer function that compares the output of the swish function with the y_value.
     :param y_value: predicted y-value
@@ -260,7 +260,7 @@ def nipuna(y_value, beta=1) -> float:  # activation function
     return max(swish(y_value, beta), y_value)
 
 
-def mean_squared_error(yhat, y):  # loss
+def mean_squared_error(yhat : int, y : int) -> float:  # loss
     """
     Calculates the mean squared error between true and predicted labels
     :param yhat: predicted y-value
@@ -270,7 +270,7 @@ def mean_squared_error(yhat, y):  # loss
     return (yhat - y) ** 2
 
 
-def mean_absolute_error(yhat, y):  # loss
+def mean_absolute_error(yhat : int, y : int) -> float:  # loss
     """
     Calculates the mean absolute error between true and predicted labels
     :param yhat: predicted y-value
@@ -280,7 +280,7 @@ def mean_absolute_error(yhat, y):  # loss
     return abs(yhat - y)
 
 
-def hinge(yhat, y):  # loss
+def hinge(yhat : int, y : int) -> float:  # loss
     """
     Calculates the hinge loss, by comparing if the loss is larger than 0.
     :param yhat: predicted y-value
@@ -290,7 +290,7 @@ def hinge(yhat, y):  # loss
     return max(1 - yhat * y, 0)
 
 
-def categorical_crossentropy(yhat_no, y_no, epsilon=0.01):  # loss
+def categorical_crossentropy(yhat_no : int, y_no : int, epsilon=0.01) -> float:  # loss
     """
     Calculates the categorical cross entropy loss for multi nominal classification problems
     :param yhat_no:
@@ -303,7 +303,7 @@ def categorical_crossentropy(yhat_no, y_no, epsilon=0.01):  # loss
     return -y_no * (log(epsilon) + (yhat_no - epsilon) / epsilon)  # else take log of e instead of yhat_no
 
 
-def binary_crossentropy(yhat_no, y_no, epsilon=0.0001):  # loss
+def binary_crossentropy(yhat_no : int, y_no : int, epsilon=0.0001) -> float:  # loss
     """
     Calculates the binary cross entropy loss for bi-nominal classification problems i.e. 0 or 1
     :param yhat_no:
@@ -314,21 +314,21 @@ def binary_crossentropy(yhat_no, y_no, epsilon=0.0001):  # loss
     return -y_no * pseudo_log(yhat_no, epsilon) - (1 - y_no) * pseudo_log(1 - yhat_no, epsilon)  # binary cross-entropy formula
 
 
-def pseudo_log(yhat_no, epsilon):
+def pseudo_log(yhat_no : int, epsilon : float) -> float:
     if yhat_no >= epsilon: 
         return log(yhat_no)
     else:
         return log(epsilon) + (yhat_no - epsilon) / epsilon # default solution if yhat_no is almost 0
     
 
-def derivative(function, delta=0.03) -> "wrapper_derivative":
+def derivative(function : Callable[..., int], delta=0.03) -> Callable[..., float]:
     """
     Returns derivative of either an activation function or loss function
     :param function: Any activation or loss function
     :param delta: step size for delta x
     :return: derived function made with wrapper_derivative
     """
-    def wrapper_derivative(x, *args) -> "derived_function":
+    def wrapper_derivative(x, *args) -> float:
         """
         Calculate derivative of either an activation function or loss function
         :param x: Any activation or loss function
@@ -347,7 +347,7 @@ class Neuron:
     Cell body (neuron) is activated by impulse from a dendrite.
     Can predict and perform regression
     """
-    def __init__(self, dim, activation=linear, loss=mean_squared_error):
+    def __init__(self, dim : int, activation=linear, loss=mean_squared_error):
         """
         Construct a neuron. With dimensions for an instance, activation and loss function are implemented, and
         passed here.
@@ -368,7 +368,7 @@ class Neuron:
         text = f'Neuron(dim={self.dim}, activation={self.activation.__name__}, loss={self.loss.__name__})'
         return text
 
-    def predict(self, xs) -> list:
+    def predict(self, xs : List[List[int]]) -> List[int]:
         """
         Predict classifier in a single class problem
         :param self:
@@ -386,7 +386,7 @@ class Neuron:
             predictions_yhats.append(y_value)
         return predictions_yhats
 
-    def partial_fit(self, xs, ys, *, alpha=0.01) -> list:
+    def partial_fit(self, xs : List[List[int]] , ys : List[int], *, alpha=0.01) -> None:
         """
         Adjust weights and biases to correct/update the predictions. Activation and loss functions
         are derived to introduce gradient descent (flattening out the deviations in accuracy and loss curve)
@@ -409,7 +409,7 @@ class Neuron:
                         alpha * dl_dhat(yhat[index], yOld) * dyhat_da(yhat[index]) * xCoords[xi]) # update weights
             index += 1
 
-    def fit(self, xs, ys, *, alpha=0.001, epochs=100):
+    def fit(self, xs : List[List[int]], ys : List[int], *, alpha=0.001, epochs=100) -> None:
         """
         Keep invoking the partially fit function over n epochs
         :param self:
@@ -433,7 +433,7 @@ class Layer:
     """
     layercounter = Counter()  # Count the layers like the name implies
 
-    def __init__(self, outputs, *, name=None, next=None):
+    def __init__(self, outputs : List[List[int]], *, name=None, next=None):
         """
         Construct the initial/parent layer
         :param outputs: Output of current layer that will be sent as input to next layer. I.e. initial instances of xs.
@@ -497,7 +497,7 @@ class Layer:
         self.add(other) # add layer
         return self
 
-    def __len__(self):
+    def __len__(self) -> int:
         """
         Implements length functionality
         :return: length (or count) of layers added to the network
@@ -512,14 +512,14 @@ class Layer:
     def __iter__(self):
         """
         Implements iterator functionality
-        :return: yield iteration over layers that are added to the network
+        :return: yield iteration of layers that are added to the network
         """
         current_layer = self
         while current_layer is not None:
             yield current_layer # provide self object of the current layer
             current_layer = current_layer.next # move to the next layer
 
-    def __call__(self, xs, loss=None, ys=None):
+    def __call__(self, xs, loss=None, ys=None) -> None:
         """
         Abstract call method with later purpose to call the next layer.
         :param xs; nested list of lists. XS receives attributes of a list instances
@@ -529,7 +529,7 @@ class Layer:
         """
         raise NotImplementedError('Abstract __call__ method')
 
-    def add(self, next):
+    def add(self, next) -> None:
         """
         Set outputs of current layer as inputs for the next layer.
         :param next:
@@ -541,7 +541,7 @@ class Layer:
         else: # set next layer after a previous layer exists
             self.next.add(next)
 
-    def set_inputs(self, inputs):
+    def set_inputs(self, inputs : List[List[int]]) -> None:
         """
         Initialise inputs
         :param inputs: outputs set as inputs
@@ -562,14 +562,14 @@ class InputLayer(Layer):
             text += ' + ' + repr(self.next)
         return text
 
-    def set_inputs(self):
+    def set_inputs(self) -> None:
         """
-        Set inputs is not implemented in this class as it passes the outputs as inputs to the Dense layer. Meaning
+        Set inputs is not implemented in this class, as it passes the outputs as inputs to the Dense layer. Meaning
         no input initialisation is needed here.
         """
         raise (NotImplementedError)
 
-    def __call__(self, xs, ys=None, alpha=None):
+    def __call__(self, xs  : List[List[int]], ys=None, alpha=None):
         """
         Call next layer and pass input instances, true labels and alpha to the next layer
         :param xs; nested list of lists. XS receives attributes of a list instances
@@ -579,7 +579,7 @@ class InputLayer(Layer):
         """
         return self.next(xs, ys=ys, alpha=alpha)
 
-    def predict(self, xs):
+    def predict(self, xs  : List[List[int]]) -> List[int]:
         """
         Send the start input to the Dense layer.
         Receive the final predicted yhats and return them
@@ -589,7 +589,7 @@ class InputLayer(Layer):
         yhats, ls, gs = self(xs)
         return yhats
 
-    def evaluate(self, xs, ys):
+    def evaluate(self, xs : List[List[int]], ys : List[int]) -> float:
         """
         Evaluate the average loss. Send xs and ys to the Dense layer and receive the loss value.
         :param xs; nested list of lists. XS receives attributes of a list instances
@@ -600,7 +600,7 @@ class InputLayer(Layer):
         l_mean = sum(ls) / len(ls)
         return l_mean
 
-    def partial_fit(self, xs, ys, batch_size=None, alpha=0.001):
+    def partial_fit(self, xs : List[List[int]], ys : List[int], batch_size=None, alpha=0.001) -> float:
         """
         Initialise a batch_size and send batches to the Dense layer. The Dense layer returns predictions, loss
         and the gradients. Though only the losses are used for calculating the average loss over all batches
@@ -624,7 +624,8 @@ class InputLayer(Layer):
         l_mean = loss_sum / loss_len
         return l_mean
 
-    def fit(self, xs, ys, *, validation_data=(None, None), batch_size=None, alpha=0.001, epochs=100):
+    def fit(self, xs : List[List[int]], ys : List[int], *, validation_data=(None, None), batch_size=None, 
+            alpha=0.001, epochs=100) -> Dict[list, Tuple[None, list]]:
         """
         Invoke partial fitting over n epochs. Also, evaluate the mean loss between the predictions and true labels.
         Xs and ys are shuffled randomly, so that every epoch will have unique training and validation.
@@ -660,7 +661,7 @@ class DenseLayer(Layer):
     Layer that penalizes weights and biases when the model is making mistakes. It introduces gradient descent, i.e.
     slowly slope down to the correct values to predict. Also, pre-activation values are calculated.
     """
-    def __init__(self, outputs, name=None, next=None):
+    def __init__(self, outputs : List[List[int]], name=None, next=None):
         """
         Construct the Dense layer
         :param outputs: Outputs of previous layer that will be sent as input to next layer. Initially instances of xs.
@@ -682,7 +683,7 @@ class DenseLayer(Layer):
             text += ' + ' + repr(self.next)
         return text
 
-    def set_inputs(self, inputs):
+    def set_inputs(self, inputs : List[List[int]]) -> None:
         """
         If inputs are received from the input layer, set random weights for each input over all neurons
         :param inputs: xs; nested list of lists. XS receives attributes of a list instances
@@ -693,7 +694,7 @@ class DenseLayer(Layer):
         self.weights = [[uniform(-border, border) for i in range(inputs)] for _ in
                         range(self.outputs)]  # number of weights (i) in number of neurons (o)
 
-    def __call__(self, xs, ys=None, alpha=None):
+    def __call__(self, xs : List[List[int]], ys=None, alpha=None) -> Tuple[List[int], List[int], List[List[int]]]:
         """
         Call next Activation (or Softmax activation) layer and send pre-activation values, true labels and alpha.
         Receive from the next layer the predicted y_hats, loss values and gradient descent values.
@@ -739,7 +740,7 @@ class ActivationLayer(Layer):
     """
     General output layer. Calculates predictions with an activation function.
     """
-    def __init__(self, outputs, activation=linear, name=None, next=None):
+    def __init__(self, outputs : List[int], activation=linear, name=None, next=None):
         """
         Construct the Activation layer
         :param outputs: Pre-activation values of previous Dense layer that will be used to calculate output values
@@ -763,7 +764,7 @@ class ActivationLayer(Layer):
             text += ' + ' + repr(self.next)
         return text
 
-    def __call__(self, xs, ys=None, alpha=None) -> "yhats, ls, qs":
+    def __call__(self, xs : List[List[int]], ys=None, alpha=None) -> Tuple[List[int], List[int], List[List[int]]]:
         """
         Call next loss layer and send output (predictions), true labels and alpha. The loss layer returns
         the same predictions to this layer, the calculated losses and the gradient descent values.
@@ -798,7 +799,7 @@ class SoftmaxLayer(Layer):  # uitvoerlaag neurale netwerken
     """
     Output layer of neural networks. Calculates predictions with softmax activation function.
     """
-    def __init__(self, outputs, name=None, next=None):
+    def __init__(self, outputs : List[int], name=None, next=None):
         """
         Construct the Softmax activation layer
         :param outputs: Pre-activation values of previous Dense layer that will be used to calculate output values
@@ -816,7 +817,7 @@ class SoftmaxLayer(Layer):  # uitvoerlaag neurale netwerken
             text += ' + ' + repr(self.next)
         return text
 
-    def __call__(self, xs, ys=None, alpha=None) -> "yhats, ls, gs":
+    def __call__(self, xs : List[List[int]], ys=None, alpha=None) -> Tuple[List[int], List[int], List[List[int]]]:
         """
         Call next loss layer and send output (predictions), true labels and alpha. The loss layer returns
         the same predictions to this layer, the calculated losses and the gradient descent values.
@@ -876,14 +877,14 @@ class LossLayer(Layer):
         text = f'LossLayer(name={repr(self.name)}, loss={self.loss.__name__})'
         return text
 
-    def add(self):
+    def add(self) -> None:
         """
         Since there is no next layer, functionality to add disappears.
         :return:
         """
         raise (NotImplementedError)
 
-    def __call__(self, xs, ys=None, alpha=None) -> "yhat, ls, gs":
+    def __call__(self, xs, ys=None, alpha=None) -> Tuple[List[int], List[int], List[List[int]]]:
         """
         No call to next layer. But loss values and gradients descent loss values are calculated.
         :param xs; Activation values of previous activation layer that will be used to calculate loss values
