@@ -33,10 +33,10 @@ class Perceptron:
         :return: predictions_yhat; single list of yhat predictions
         """
         predictions_yhat = []
+        predict_label = lambda x: -1.0 if x < 0 else (0.0 if x == 0 else 1.0)
         for xCoords in xs:
             # Initial prediction
             y_value = self.bias + sum(self.weights[xi] * xCoords[xi] for xi in range(len(xCoords)))
-            predict_label = lambda x: -1.0 if x < 0 else (0.0 if x == 0 else 1.0)
             yhat = predict_label(y_value)
             # Save predictions
             predictions_yhat.append(yhat)
@@ -487,29 +487,37 @@ class Layer:
 
     def __iadd__(self, other):
         """
-        Implements += add functionality for layer classes
+        Implements += add functionality for layer classes.
+        Purpose: add and keep track of layers.
         :param other: a layer instance
         :return: self; class instance
         """
-        if self.validate_type_and_dimension(other):
-            components = (x + y for x, y in zip(self.components, other.components))
-            self._components = tuple(components)
-            return self
-        raise NotImplemented
+        if not isinstance(other, Layer):
+            raise TypeError(f'Can only add Layer instances, not {type(other).__name__}')
+        self.add(other) # add layer
+        return self
 
     def __len__(self):
         """
         Implements length functionality
-        :return: length of self instance
+        :return: length (or count) of layers added to the network
         """
-        return len(self)
+        length = 1 # input layer is the first in the length
+        next_layer = self.next
+        while next_layer is not None:
+            length += 1
+            next_layer = next_layer.next
+        return length
 
     def __iter__(self):
         """
         Implements iterator functionality
-        :return: iterate over self instance
+        :return: yield iteration over layers that are added to the network
         """
-        return iter(self)
+        current_layer = self
+        while current_layer is not None:
+            yield current_layer # provide self object of the current layer
+            current_layer = current_layer.next # move to the next layer
 
     def __call__(self, xs, loss=None, ys=None):
         """
@@ -629,16 +637,16 @@ class InputLayer(Layer):
         :return: history dictionary containing either, only training loss values or includes validation loss values
         """
         if epochs > 0:  # choose number of epochs to iterate over
-            history = {'loss': []}
-            history.update(
-                {'val_loss': []} if all(validation_data) else history)  # add validation_data loss values if not empty
+            # add validation_data loss values, if it doesn't contain None's i.e. is not empty.
+            history = {'loss': [], 'val_loss' : [] if all(validation_data) else None}  
+    
             for epoch in range(epochs):
                 same_shuffle_object = list(zip(xs, ys))
                 shuffle(same_shuffle_object)
                 xs, ys = zip(*same_shuffle_object) # unpack xs and ys to separate objects
                 l_mean = self.partial_fit(xs=xs, ys=ys, batch_size=batch_size, alpha=alpha)
                 history['loss'].append(l_mean)
-                if len(history) == 2:  # two keys are present
+                if history['val_loss'] is not None:  # if validation data exists
                     xs_val, ys_val = validation_data
                     vl_mean = self.evaluate(xs_val, ys_val)
                     history['val_loss'].append(vl_mean)
@@ -679,12 +687,11 @@ class DenseLayer(Layer):
         If inputs are received from the input layer, set random weights for each input over all neurons
         :param inputs: xs; nested list of lists. XS receives attributes of a list instances
         """
-        if inputs is not None:  # check if inputs are received from input layer
-            self.inputs = inputs
+        self.inputs = inputs
 
-            border: float = (6 / (inputs + self.outputs)) ** (1 / 2)  # set range value to randomize in between
-            self.weights = [[uniform(-border, border) for i in range(inputs)] for _ in
-                            range(self.outputs)]  # number of weights (i) in number of neurons (o)
+        border: float = (6 / (inputs + self.outputs)) ** (1 / 2)  # set range value to randomize in between
+        self.weights = [[uniform(-border, border) for i in range(inputs)] for _ in
+                        range(self.outputs)]  # number of weights (i) in number of neurons (o)
 
     def __call__(self, xs, ys=None, alpha=None):
         """
@@ -732,7 +739,7 @@ class ActivationLayer(Layer):
     """
     General output layer. Calculates predictions with an activation function.
     """
-    def __init__(self, outputs, activation=linear, beta=1, name=None, next=None):
+    def __init__(self, outputs, activation=linear, name=None, next=None):
         """
         Construct the Activation layer
         :param outputs: Pre-activation values of previous Dense layer that will be used to calculate output values
@@ -744,7 +751,6 @@ class ActivationLayer(Layer):
         self.activation = activation
         self.name = name
         self.activation_gradient = derivative(self.activation)
-        self.beta = beta
 
         super().__init__(outputs, name=name, next=next)  # send outputs, name and next layer info to parent layer
 
@@ -772,7 +778,7 @@ class ActivationLayer(Layer):
             h = []  # Output value for one instance x
             for o in range(self.outputs):  # Neurons
                 # Calculate the output value for each neuron o with the list of input values x.
-                h_no = self.activation(x[o], self.beta)
+                h_no = self.activation(x[o])
                 h.append(h_no)
             hh.append(h)
         yhats, ls, gs = self.next(hh, ys=ys, alpha=alpha)  # from Dense layer <=> to the Loss layer
@@ -824,9 +830,7 @@ class SoftmaxLayer(Layer):  # uitvoerlaag neurale netwerken
             yhat_nose = []  # List with predictions of an instance
             max_val = max(xs[n])
             for o in range(self.outputs):  # i == o for n inputs == outputs
-                xs[n][o] = xs[n][o] - max_val
-
-                yhat_no = e ** xs[n][o]
+                yhat_no = e ** (xs[n][o] - max_val)
                 yhat_nose.append(yhat_no)  # Fill list with denominators
             yhat_sum = sum(yhat_nose)  # Calculate sum of all outputs for given instance
             yhat_nose = [i / yhat_sum for i in yhat_nose]  # Where i = e^x_no (yhat_nose get overwritten with outputs)
