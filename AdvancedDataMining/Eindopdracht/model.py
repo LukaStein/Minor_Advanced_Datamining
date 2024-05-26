@@ -2,7 +2,7 @@
 from collections import Counter
 from copy import deepcopy
 from math import e, log  # natural value and log
-from random import uniform, seed, shuffle, Random
+from random import uniform, shuffle
 
 
 class Perceptron:
@@ -136,13 +136,13 @@ class LinearRegression:
         :param alpha; learning rate, defaulted to 0.01
         :return: yhat_new_predictions; partially fitted predictions
         """
-        yhat: list = self.predict(xs)
+        yhats: list = self.predict(xs)
         index = 0
         for x, yOld in zip(xs, ys):
             # update-regel
-            self.bias = self.bias - alpha * (yhat[index] - yOld)
+            self.bias = self.bias - alpha * (yhats[index] - yOld)
             for xi in range(len(x)):
-                self.weights[xi] = self.weights[xi] - alpha * (yhat[index] - yOld) * x[xi]
+                self.weights[xi] = self.weights[xi] - alpha * (yhats[index] - yOld) * x[xi]
             index += 1
 
     def fit(self, xs, ys, *, alpha=0.001, epochs=100):
@@ -403,10 +403,10 @@ class Neuron:
         dyhat_da = derivative(self.activation)  # pass the activation function to get its derivative
 
         for xCoords, yOld in zip(xs, ys):  # yOld is the true label
-            self.bias = self.bias - (alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha)) # update bias
+            self.bias = self.bias - (alpha * dl_dhat(yhat[index], yOld) * dyhat_da(yhat[index])) # update bias
             for xi in range(len(xCoords)):  
                 self.weights[xi] = self.weights[xi] - (
-                        alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha) * xCoords[xi]) # update weights
+                        alpha * dl_dhat(yhat[index], yOld) * dyhat_da(yhat[index]) * xCoords[xi]) # update weights
             index += 1
 
     def fit(self, xs, ys, *, alpha=0.001, epochs=100):
@@ -633,10 +633,9 @@ class InputLayer(Layer):
             history.update(
                 {'val_loss': []} if all(validation_data) else history)  # add validation_data loss values if not empty
             for epoch in range(epochs):
-                seed(1234)  # same seed
-                r = Random(1234)  # same seed
-                shuffle(xs)  # shuffle data
-                r.shuffle(ys)  # shuffle data
+                same_shuffle_object = list(zip(xs, ys))
+                shuffle(same_shuffle_object)
+                xs, ys = zip(*same_shuffle_object) # unpack xs and ys to separate objects
                 l_mean = self.partial_fit(xs=xs, ys=ys, batch_size=batch_size, alpha=alpha)
                 history['loss'].append(l_mean)
                 if len(history) == 2:  # two keys are present
@@ -714,10 +713,12 @@ class DenseLayer(Layer):
             qs = []
             for n in range(len(xs)):  # Instances
                 q = []
+                # Calculate all gradients
                 for i in range(self.inputs):  # Neurons, each output of input layer as input
                     gradient = sum(gs[n][o] * self.weights[o][i] for o in range(self.outputs))
                     q.append(gradient)
                 qs.append(q)
+            for n in range(len(xs)):
                 # Update weights and biases for each output and input
                 for o in range(self.outputs):
                     update = alpha / len(xs) * gs[n][o]
@@ -840,7 +841,7 @@ class SoftmaxLayer(Layer):  # uitvoerlaag neurale netwerken
                 q = []
                 for i in range(self.inputs):  # Iterate over neurons o, inputs of outputs from previous layer
                     # Calculate gradient descent value
-                    gradient = sum(gs[n][o] * yhats[n][o] * ((o == i) - yhats[n][i]) for o in range(self.outputs))
+                    gradient = sum(gs[n][o] * yhat_noses[n][o] * ((o == i) - yhat_noses[n][i]) for o in range(self.outputs))
                     q.append(gradient)
                 qs.append(q)
         return yhats, ls, qs  # To dense layer
