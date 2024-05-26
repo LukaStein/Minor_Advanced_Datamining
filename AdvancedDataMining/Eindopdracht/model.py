@@ -42,51 +42,51 @@ class Perceptron:
             predictions_yhat.append(yhat)
         return predictions_yhat
 
-    def partial_fit(self, xs, ys) -> list:
+    def partial_fit(self, xs, ys):
         """
         Adjust weights and biases to partially fit/correct the predictions
-        :param self:
-        :param xs; nested list of lists. XS receives attributes of a list instances
-        :param ys: nested list of lists. YS contains the true labels.
-        :return: yhatNewPredictions; partially fitted predictions
+        :param xs: nested list of lists. XS receives attributes of a list instances
+        :param ys: list of true labels
+        :return: number of updates made
         """
-        yhat: list = self.predict(xs)
-        index = 0
-        yhat_new_predictions = []
-        for x, yOld in zip(xs, ys):
-            # update-regel
-            self.bias = self.bias - (yhat[index] - yOld)
-            for xi in range(len(x)):
-                self.weights[xi] = self.weights[xi] - (yhat[index] - yOld) * x[xi]
-            # opnieuw voorspellen
-            y_new = self.bias + sum(self.weights[xi] * x[xi] for xi in range(len(x)))
-            predict_label = lambda x: -1.0 if x < 0 else (0.0 if x == 0 else 1.0)
-            yhat_new = predict_label(y_new)
-            yhat_new_predictions.append(yhat_new)
-            index += 1
-        return yhat_new_predictions
+        converge_steps = 0
+        for x, y in zip(xs, ys):
+            yhat = self.bias + sum(self.weights[xi] * x[xi] for xi in range(len(x)))
+            yhat = -1.0 if yhat < 0 else (0.0 if yhat == 0 else 1.0)
+            if yhat != y:
+                update = y - yhat
+                self.bias += update
+                for xi in range(len(x)):
+                    self.weights[xi] += update * x[xi]
+                converge_steps += 1
+        return converge_steps
 
     def fit(self, xs, ys, *, epochs=0):
         """
-        Keep invoking the partially fit function over n epochs or if n=0
+        Keep invoking the partially fit function over n epochs or if epochs=0
         run infinite epochs until all predictions are correct
-        :param self:
-        :param xs; nested list of lists. XS receives attributes of a list instances
-        :param ys: nested list of lists. YS contains the true labels.
-        :param epochs: number of epochs to partially fit on
+        :param xs: nested list of lists. XS receives attributes of a list instances
+        :param ys: list of true labels
+        :param epochs: number of epochs to partially fit on, default is 0 (run until convergence)
         """
-        if epochs > 0:  # choose number of epochs to iterate over
-            for _ in range(epochs):
-                self.partial_fit(xs, ys)
-        elif epochs < 0:  # not allowed epochs input
-            print("Epoch below 0 isn't allowed")
-        else:  # default or zero epoch input value
-            index = 0
-            for index in range(len(ys)):
-                yhat_new_predictions = self.partial_fit(xs, ys)
-                if yhat_new_predictions[index] != ys[index]:
-                    self.partial_fit(xs, ys)
-                    index += 1
+        if epochs == 0:
+            epoch = 0
+            while True:
+                converge_steps = self.partial_fit(xs, ys)
+                epoch += 1
+                if converge_steps == 0:
+                    print(f"Converged after {epoch} epochs.")
+                    break
+        elif epochs > 0:
+            for epoch in range(1, epochs + 1):
+                converge_steps = self.partial_fit(xs, ys)
+                if converge_steps == 0:
+                    print(f"Converged after {epoch} epochs.")
+                    break
+            else:
+                print(f"Did not converge within the given {epochs} epochs.")
+        else:
+            print(f"Can't run on negative epochs: {epochs}")
 
 
 class LinearRegression:
@@ -138,17 +138,12 @@ class LinearRegression:
         """
         yhat: list = self.predict(xs)
         index = 0
-        yhat_new_predictions = []
         for x, yOld in zip(xs, ys):
             # update-regel
             self.bias = self.bias - alpha * (yhat[index] - yOld)
             for xi in range(len(x)):
                 self.weights[xi] = self.weights[xi] - alpha * (yhat[index] - yOld) * x[xi]
-            # opnieuw voorspellen
-            y_new = self.bias + sum(self.weights[xi] * x[xi] for xi in range(len(x)))
-            yhat_new_predictions.append(y_new)
             index += 1
-        return yhat_new_predictions
 
     def fit(self, xs, ys, *, alpha=0.001, epochs=100):
         """
@@ -193,9 +188,12 @@ def tanh(y_value, *args) -> float:  # activation function
     :param y_value: predicted y-value
     :return: adjusted y_value
     """
-    if y_value > 700 or y_value < -700:  # handle overflow and underflow
-        return y_value
-    return (e ** y_value - e ** -y_value) / (e ** y_value + e ** -y_value)
+    if y_value > 700:
+        return 1
+    if y_value < -700:
+        return -1
+    else:
+        return (e ** y_value - e ** -y_value) / (e ** y_value + e ** -y_value)
 
 
 def sigmoid(y_value, beta=1) -> float:  # activation function
@@ -305,7 +303,7 @@ def categorical_crossentropy(yhat_no, y_no, epsilon=0.01):  # loss
     return -y_no * (log(epsilon) + (yhat_no - epsilon) / epsilon)  # else take log of e instead of yhat_no
 
 
-def binary_crossentropy(yhat_no, y_no, epsilon=0.01):  # loss
+def binary_crossentropy(yhat_no, y_no, epsilon=0.0001):  # loss
     """
     Calculates the binary cross entropy loss for bi-nominal classification problems i.e. 0 or 1
     :param yhat_no:
@@ -313,14 +311,15 @@ def binary_crossentropy(yhat_no, y_no, epsilon=0.01):  # loss
     :param epsilon:
     :return: loss value
     """
-    log_e = (log(epsilon) + (yhat_no - epsilon / epsilon))  # log_e formula if log(yhat_no) invokes a math domain error
-    log_yhat, log_yhat2 = log_e, log_e  # assign log_yhat to error prevention per default
-    if yhat_no >= epsilon:  # if not to close to zero
-        log_yhat = log(yhat_no)
-    if 1 - yhat_no >= epsilon:  # if not to close to zero
-        log_yhat2 = log(1 - yhat_no)
-    return -y_no * log_yhat - (1 - y_no) * log_yhat2  # binary cross-entropy formula
+    return -y_no * pseudo_log(yhat_no, epsilon) - (1 - y_no) * pseudo_log(1 - yhat_no, epsilon)  # binary cross-entropy formula
 
+
+def pseudo_log(yhat_no, epsilon):
+    if yhat_no >= epsilon: 
+        return log(yhat_no)
+    else:
+        return log(epsilon) + (yhat_no - epsilon) / epsilon # default solution if yhat_no is almost 0
+    
 
 def derivative(function, delta=0.03) -> "wrapper_derivative":
     """
@@ -380,9 +379,9 @@ class Neuron:
         for xCoords in xs:
             y_value = 0
             for xi in range(len(xCoords)):
-                y_value = y_value + self.weights[xi] * xCoords[xi]
+                y_value = y_value + self.weights[xi] * xCoords[xi] + self.bias
             # Initial prediction
-            y_value = y_value + self.bias
+            y_value = self.activation(y_value) # phi mist
             # Save predictions
             predictions_yhats.append(y_value)
         return predictions_yhats
@@ -408,13 +407,7 @@ class Neuron:
             for xi in range(len(xCoords)):  
                 self.weights[xi] = self.weights[xi] - (
                         alpha * dl_dhat(yhat[index], yOld) * dyhat_da(alpha) * xCoords[xi]) # update weights
-            # Redo value predictions
-            y_new = self.bias + sum(self.weights[xi] * xCoords[xi] for xi in range(len(xCoords)))
-
-            yhat_update = self.activation(y_new) # predict labels
-            predictions_updated_yhat.append(yhat_update)
             index += 1
-        return predictions_updated_yhat
 
     def fit(self, xs, ys, *, alpha=0.001, epochs=100):
         """
