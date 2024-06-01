@@ -166,7 +166,7 @@ def linear(a : int) -> tuple[float, int]:  # activation function
     """
     Identify function returns the predicted y-value that it receives
     :param a; predicted y-value
-    :return: a; predicted y-value
+    :return: a; predicted label y-value
     """
     return a
 
@@ -186,7 +186,7 @@ def tanh(y_value : int) -> float:  # activation function
     """
     Tangens hyperbolic function flattens the slope of signum function
     :param y_value: predicted y-value
-    :return: adjusted y_value
+    :return: adjusted label y_value
     """
     if y_value > 700:
         return 1
@@ -201,7 +201,7 @@ def sigmoid(y_value : int, beta=1) -> float:  # activation function
     Sigmoid function that adds the natural log e in the equation.
     :param y_value: predicted y-value
     :param beta: The trainable parameter beta is constant for sigmoid.
-    :return: adjusted y_value
+    :return: adjusted label y_value
     """
     if y_value < -700:  # handle overflow
         return e ** y_value
@@ -212,7 +212,7 @@ def softsign(y_value : int) -> float:  # activation function
     """
     Softsign function provides non-linearity
     :param y_value: predicted y-value
-    :return: adjusted y_value
+    :return: adjusted label y_value
     """
     return y_value / (1 + abs(y_value))
 
@@ -222,7 +222,7 @@ def softplus(y_value : int) -> float:  # activation function
     Softplus function provides non-linearity, but can't calculate negative y-values i.e. y.min = 0.
     Softplus is the average of the relu function and provides a gradual slope.
     :param y_value: predicted y-value
-    :return: adjusted y_value
+    :return: adjusted label y_value
     """
     if y_value > 700:   # handle overflow
         return y_value
@@ -233,7 +233,7 @@ def relu(y_value : int) -> float:  # activation function
     """
     Relu function provides linearity with a slope of 0 or 1, but can't calculate negative y-values i.e. y.min = 0.
     :param y_value: predicted y-value
-    :return: adjusted y_value
+    :return: adjusted label y_value
     """
     return max(0, y_value)
 
@@ -245,17 +245,32 @@ def swish(y_value : int, beta=1) -> float:  # activation function
     :param beta:
     :param y_value: predicted y-value
     :param beta: The trainable parameter beta can be adjusted.
-    :return: adjusted y_value
+    :return: adjusted label y_value
     """
     return y_value * sigmoid(y_value, beta)
 
-
+def elish(y_value : int) -> float: # activation function
+    """
+    If x is larger of equal to zero take the swish formula, without beta. 
+    If x is below zero use natural e based formula.
+    :param y_value: predicted y-value
+    :return: adjusted label y_value
+    """
+    if y_value >= 0:
+        return y_value / (1 + e**-y_value)
+    # -1000 causes an overflow error for e**--1000 (e**-y_value) 
+    # and the function approaches -1 as lower bound.
+    elif y_value < -700:
+        return -1
+    else:
+        return (e**y_value - 1)/(1 + e**-y_value)
+                   
 def nipuna(y_value : int, beta=1) -> float:  # activation function
     """
     The nipuna function is a newer function that compares the output of the swish function with the y_value.
     :param y_value: predicted y-value
     :param beta: The trainable parameter beta can be adjusted.
-    :return: adjusted y_value
+    :return: adjusted label y_value
     """
     return max(swish(y_value, beta), y_value)
 
